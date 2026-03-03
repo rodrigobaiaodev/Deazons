@@ -1,6 +1,6 @@
 # 🎬 Deazons - Seu Portal de Cinema e Séries
 
-![Deazons Home Screen](C:\Users\rodri\.gemini\antigravity\brain\59c664fc-cce5-4c31-a8da-b885bacd1af2\ultimos_trailers_section_1772551520471.png)
+![Deazons Home Screen]("C:\Users\rodri\Downloads\Deazons-home-img.png")
 
 ## 🚀 Sobre o Projeto
 
