@@ -1,6 +1,6 @@
 # 🎬 Deazons - Seu Portal de Cinema e Séries
 
-![Deazons Home Screen]("C:\Users\rodri\Downloads\Deazons-home-img.png")
+<img width="1920" height="5242" alt="Deazons-home-img" src="https://github.com/user-attachments/assets/9c1144ac-e373-456b-9002-0d8260e559fd" />
 
 ## 🚀 Sobre o Projeto
 
