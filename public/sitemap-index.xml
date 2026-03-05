@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://deazons.com/sitemap-pages.xml</loc>
+    <lastmod>2026-03-05</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://deazons.com/sitemap-articles.xml</loc>
+    <lastmod>2026-03-05</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://deazons.com/sitemap-movies.xml</loc>
+    <lastmod>2026-03-05</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://deazons.com/sitemap-series.xml</loc>
+    <lastmod>2026-03-05</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://deazons.com/sitemap-people.xml</loc>
+    <lastmod>2026-03-05</lastmod>
+  </sitemap>
+</sitemapindex>

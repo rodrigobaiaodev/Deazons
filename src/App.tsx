@@ -23,6 +23,9 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Contact from "./pages/Contact";
 import SitemapGenerator from "./components/SitemapGenerator";
+import NewsList from "./pages/NewsList";
+import NewsArticlePage from "./pages/NewsArticlePage";
+import AdminRSS from "./pages/AdminRSS";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +60,9 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/noticias" element={<NewsList />} />
+            <Route path="/noticias/:id" element={<NewsArticlePage />} />
+            <Route path="/admin/rss" element={<AdminRSS />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

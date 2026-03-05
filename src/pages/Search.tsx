@@ -1,4 +1,4 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { tmdbAPI, Movie, TVShow, Person } from "@/services/tmdb";
@@ -31,6 +31,7 @@ const Search = () => {
       setQuery(searchQuery);
       performSearch(searchQuery, 1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const performSearch = async (searchQuery: string, page: number) => {

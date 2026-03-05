@@ -13,6 +13,7 @@ const navLinks = [
   { path: "/movies", label: "Filmes" },
   { path: "/tv", label: "Séries" },
   { path: "/people", label: "Pessoas" },
+  { path: "/noticias", label: "Notícias" },
 ];
 
 const Navbar = () => {
