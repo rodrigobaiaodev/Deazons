@@ -41,17 +41,17 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://deazons.com/series/255661-jovem-sherlock</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://deazons.com/series/4614-ncis-investigacao-naval</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://deazons.com/series/14424-malhacao</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/549-lei-ordem</loc>
     
     <priority>0.6</priority>
   </url>
@@ -101,22 +101,12 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/2661-kamen-rider</loc>
+    <loc>https://deazons.com/series/95479-jujutsu-kaisen</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/4057-mentes-criminosas</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/1408-dr-house</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/4604-smallville-as-aventuras-do-superboy</loc>
+    <loc>https://deazons.com/series/224372-o-cavaleiro-dos-sete-reinos</loc>
     
     <priority>0.6</priority>
   </url>
@@ -126,17 +116,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://deazons.com/series/1408-dr-house</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://deazons.com/series/59941-the-tonight-show-com-jimmy-fallon</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/46952-lista-negra</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/764-midsomer-murders</loc>
     
     <priority>0.6</priority>
   </url>
@@ -146,7 +131,12 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/1431-csi-investigacao-criminal</loc>
+    <loc>https://deazons.com/series/4604-smallville-as-aventuras-do-superboy</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/4057-mentes-criminosas</loc>
     
     <priority>0.6</priority>
   </url>
@@ -156,7 +146,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/202411-monarch-legado-de-monstros</loc>
+    <loc>https://deazons.com/series/1431-csi-investigacao-criminal</loc>
     
     <priority>0.6</priority>
   </url>
@@ -171,7 +161,12 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/65733-doraemon-o-gato-do-futuro</loc>
+    <loc>https://deazons.com/series/46952-lista-negra</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/764-midsomer-murders</loc>
     
     <priority>0.6</priority>
   </url>
@@ -181,7 +176,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/1668-friends</loc>
+    <loc>https://deazons.com/series/4656-raw</loc>
     
     <priority>0.6</priority>
   </url>
@@ -191,17 +186,22 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/4656-raw</loc>
+    <loc>https://deazons.com/series/300054-baki-dou-o-samurai-invencivel</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/255661-jovem-sherlock</loc>
+    <loc>https://deazons.com/series/16656-</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://deazons.com/series/1396-breaking-bad</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/202411-monarch-legado-de-monstros</loc>
     
     <priority>0.6</priority>
   </url>
@@ -346,11 +346,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/57911-doraemon</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/65701-good-mythical-morning</loc>
     
     <priority>0.6</priority>
@@ -371,17 +366,17 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/300015-</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/80748-fbi</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://deazons.com/series/1402-the-walking-dead</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/300015-</loc>
     
     <priority>0.6</priority>
   </url>
@@ -461,6 +456,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://deazons.com/series/57911-doraemon</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://deazons.com/series/202213-a-historia-do-mundo-parte-2</loc>
     
     <priority>0.6</priority>
@@ -526,11 +526,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/209867-frieren-e-a-jornada-para-o-alem</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/1220-graham-norton-show</loc>
     
     <priority>0.6</priority>
@@ -561,11 +556,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/250307-the-pitt</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/1636-top-of-the-pops</loc>
     
     <priority>0.6</priority>
@@ -586,6 +576,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://deazons.com/series/76479-the-boys</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://deazons.com/series/71790-swat-forca-de-intervencao</loc>
     
     <priority>0.6</priority>
@@ -596,72 +591,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://deazons.com/series/250307-the-pitt</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://deazons.com/series/310800-o-beijo-da-sereia</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/71790-swat-forca-de-intervencao</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/2288-prison-break-em-busca-da-verdade</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/64190-volle-kanne</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/17610-ncis-los-angeles</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/1636-top-of-the-pops</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/153485-</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/63809-camera-cafe</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/39351-grimm-contos-de-terror</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/75219-9-1-1</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/11366-big-brother</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/4385-the-colbert-report</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/15260-hora-de-aventura</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/873-columbo</loc>
     
     <priority>0.6</priority>
   </url>
@@ -671,17 +606,22 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/2912-jeopardy</loc>
+    <loc>https://deazons.com/series/11366-big-brother</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/1100-como-eu-conheci-sua-mae</loc>
+    <loc>https://deazons.com/series/2288-prison-break-em-busca-da-verdade</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/1415-elementarissimo</loc>
+    <loc>https://deazons.com/series/4385-the-colbert-report</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/30984-bleach</loc>
     
     <priority>0.6</priority>
   </url>
@@ -691,12 +631,72 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/655-jornada-nas-estrelas-a-nova-geracao</loc>
+    <loc>https://deazons.com/series/245927-paradise</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/17610-ncis-los-angeles</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/209867-frieren-e-a-jornada-para-o-alem</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/129552-o-agente-noturno</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/1100-como-eu-conheci-sua-mae</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/2912-jeopardy</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/6732-pleasant-goat-and-big-big-wolf</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://deazons.com/series/30983-detetive-conan</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/76479-the-boys</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/153485-</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/62992-das</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/39351-grimm-contos-de-terror</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/283123-esref-ruya</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/655-jornada-nas-estrelas-a-nova-geracao</loc>
     
     <priority>0.6</priority>
   </url>
@@ -801,27 +801,12 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/4556-scrubs</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/40663-aibou-tokyo-detective-duo</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/42009-black-mirror</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://deazons.com/series/12971-dragon-ball-z</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/295778-scrubs</loc>
     
     <priority>0.6</priority>
   </url>
@@ -956,11 +941,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/1413-american-horror-story</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/30623-crayon-shin-chan</loc>
     
     <priority>0.6</priority>
@@ -981,11 +961,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/56570-outlander</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/1409-filhos-da-anarquia</loc>
     
     <priority>0.6</priority>
@@ -996,17 +971,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/1667-saturday-night-live</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/1900-live-with-kelly-and-mark</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/3452-frasier</loc>
+    <loc>https://deazons.com/series/15260-hora-de-aventura</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1016,42 +981,32 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/46260-naruto</loc>
+    <loc>https://deazons.com/series/3562-nova</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/258386-a</loc>
+    <loc>https://deazons.com/series/5811-</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/86310-</loc>
+    <loc>https://deazons.com/series/141-cheers</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/1450-divisao-criminal</loc>
+    <loc>https://deazons.com/series/1508-dancing-with-the-stars</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/37288-morgenmagazin</loc>
+    <loc>https://deazons.com/series/3022-rugrats-os-anjinhos</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/94997-a-casa-do-dragao</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/199332-</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/4588-er-plantao-medico</loc>
+    <loc>https://deazons.com/series/2458-csi-nova-york</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1061,27 +1016,17 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/60708-gotham</loc>
+    <loc>https://deazons.com/series/295778-scrubs</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/57706-ranma-</loc>
+    <loc>https://deazons.com/series/40605-die-harald-schmidt-show</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/78191-voce</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/35024-show-music-core</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/4586-gilmore-girls-tal-mae-tal-filha</loc>
+    <loc>https://deazons.com/series/32726-bobs-burgers</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1091,12 +1036,67 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/46298-hunter-x-hunter</loc>
+    <loc>https://deazons.com/series/35024-show-music-core</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/688-west-wing-nos-bastidores-do-poder</loc>
+    <loc>https://deazons.com/series/56570-outlander</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/2122-o-rei-do-pedaco</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/69050-riverdale</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/111979-leute-heute</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/1450-divisao-criminal</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/1705-fronteiras</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/94997-a-casa-do-dragao</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/37678-the-voice</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/71932-avn-awards</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/80318-centovetrine</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/6809-el-hormiguero</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/40663-aibou-tokyo-detective-duo</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1146,11 +1146,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/71932-avn-awards</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/78191-voce</loc>
     
     <priority>0.6</priority>
@@ -1191,6 +1186,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://deazons.com/series/1413-american-horror-story</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://deazons.com/series/60708-gotham</loc>
     
     <priority>0.6</priority>
@@ -1201,17 +1201,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/48866-os-100</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/4013-</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/57706-ranma-</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1256,11 +1246,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/74561-</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/1447-psych-agentes-especiais</loc>
     
     <priority>0.6</priority>
@@ -1297,6 +1282,21 @@
   </url>
   <url>
     <loc>https://deazons.com/series/580-jornada-nas-estrelas-a-nova-missao</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/4026-cbs-news-sunday-morning</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/1432-veronica-mars</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/64356-o-retorno-do-super-homem</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1397,16 +1397,6 @@
   </url>
   <url>
     <loc>https://deazons.com/series/2025-barrados-no-baile</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/1948-degrassi</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/1920-twin-peaks</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1516,11 +1506,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/4608-um-maluco-na-tv</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://deazons.com/series/2625-diagnosis-murder</loc>
     
     <priority>0.6</priority>
@@ -1552,6 +1537,11 @@
   </url>
   <url>
     <loc>https://deazons.com/series/52823-idolo-semanal</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/285739-vladimir</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1611,12 +1601,17 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/72649-hot-ones</loc>
+    <loc>https://deazons.com/series/1514-the-one-show</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/235635-como-agua-para-chocolate</loc>
+    <loc>https://deazons.com/series/1403-agentes-da-shield-da-marvel</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/72649-hot-ones</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1697,6 +1692,11 @@
   </url>
   <url>
     <loc>https://deazons.com/series/30801-2-days-1-night</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/71494-golden-globe-awards</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1801,17 +1801,22 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/8514-rupauls-drag-race</loc>
+    <loc>https://deazons.com/series/6744-the-merv-griffin-show</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/78648-amazing-saturday</loc>
+    <loc>https://deazons.com/series/112470-ici-tout-commence</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/231-the-soup</loc>
+    <loc>https://deazons.com/series/42444-os-cavaleiros-do-zodiaco</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/1417-glee-em-busca-da-fama</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1821,52 +1826,52 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/36-a-paranormal</loc>
+    <loc>https://deazons.com/series/1606-ghost-whisperer</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/115645-genesis</loc>
+    <loc>https://deazons.com/series/78648-amazing-saturday</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/63639-the-expanse</loc>
+    <loc>https://deazons.com/series/80885-</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/918-mash</loc>
+    <loc>https://deazons.com/series/97072-charmsukh</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/1639-heroes</loc>
+    <loc>https://deazons.com/series/235635-como-agua-para-chocolate</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/39340-duas-garotas-em-apuros</loc>
+    <loc>https://deazons.com/series/203599-olhe-em-volta</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/81329-un-si-grand-soleil</loc>
+    <loc>https://deazons.com/series/206828-dtf-st-louis</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/734-magnum</loc>
+    <loc>https://deazons.com/series/62643-lendas-do-amanha</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/4275-prisoner</loc>
+    <loc>https://deazons.com/series/61025-midnight-with-chris-hardwick</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/5500-soko-munchen</loc>
+    <loc>https://deazons.com/series/95557-invencivel</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1876,27 +1881,12 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/1966-bbc-horizon</loc>
+    <loc>https://deazons.com/series/39314--</loc>
     
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/39185-vera</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/114863-mentiras-verdaderas</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/302060-watching-you</loc>
-    
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://deazons.com/series/3940-judge-judy</loc>
+    <loc>https://deazons.com/series/4551-americas-got-talent</loc>
     
     <priority>0.6</priority>
   </url>
@@ -1906,7 +1896,17 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://deazons.com/series/37606-o-incrivel-mundo-de-gumball</loc>
+    <loc>https://deazons.com/series/95057-superman-e-lois</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/4551-americas-got-talent</loc>
+    
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://deazons.com/series/224105-</loc>
     
     <priority>0.6</priority>
   </url>
