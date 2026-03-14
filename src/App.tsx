@@ -26,6 +26,7 @@ import SitemapGenerator from "./components/SitemapGenerator";
 import NewsList from "./pages/NewsList";
 import NewsArticlePage from "./pages/NewsArticlePage";
 import AdminRSS from "./pages/AdminRSS";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ const App = () => (
       <Toaster />
       <Sonner position="top-right" />
       <BrowserRouter>
+        <ScrollToTop />
         <SitemapGenerator />
         <Layout>
           <Routes>
