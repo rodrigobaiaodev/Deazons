@@ -14,16 +14,16 @@ export const slugify = (text: string): string => {
 };
 
 /**
- * Builds a slug URL for movies: /movies/{id}-{slug}
+ * Builds a slug URL for movies: /filmes/{id}-{slug}
  */
 export const moviePath = (id: number, title: string): string =>
-  `/movies/${id}-${slugify(title)}`;
+  `/filmes/${id}-${slugify(title)}`;
 
 /**
- * Builds a slug URL for TV shows: /tvs/{id}-{slug}
+ * Builds a slug URL for TV shows: /series/{id}-{slug}
  */
 export const tvPath = (id: number, name: string): string =>
-  `/tvs/${id}-${slugify(name)}`;
+  `/series/${id}-${slugify(name)}`;
 
 /**
  * Extracts the numeric ID from a slug param like "799882-the-bluff"

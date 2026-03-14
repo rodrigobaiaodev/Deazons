@@ -77,7 +77,7 @@ const TVShowCast = () => {
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <p className="text-xl text-destructive">{error}</p>
         <Button asChild>
-          <Link to={`/tvs/${id}`}>Back to TV Show</Link>
+          <Link to={`/series/${id}`}>Back to TV Show</Link>
         </Button>
       </div>
     );
@@ -95,7 +95,7 @@ const TVShowCast = () => {
       <div className="container">
         <div className="mb-8">
           <Button variant="ghost" asChild className="mb-4 -ml-3 gap-1">
-            <Link to={`/tvs/${id}`}>
+            <Link to={`/series/${id}`}>
               <ArrowLeft size={16} />
               Back to TV Show
             </Link>
@@ -116,7 +116,7 @@ const TVShowCast = () => {
               {cast.map(person => (
                 <Link 
                   key={person.id} 
-                  to={`/people/${person.id}`}
+                  to={`/pessoas/${person.id}`}
                   className="block group"
                 >
                   <div className="aspect-[2/3] rounded-lg overflow-hidden bg-card">
@@ -153,7 +153,7 @@ const TVShowCast = () => {
                       {departmentCrew.map(person => (
                         <Link 
                           key={`${person.id}-${person.job}`} 
-                          to={`/people/${person.id}`}
+                          to={`/pessoas/${person.id}`}
                           className="block group"
                         >
                           <div className="aspect-[2/3] rounded-lg overflow-hidden bg-card">

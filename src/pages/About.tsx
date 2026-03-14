@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
@@ -7,51 +6,51 @@ const About = () => {
   return (
     <div className="min-h-screen pb-16 pt-24">
       <div className="container max-w-4xl">
-        <h1 className="text-4xl font-bold mb-6">About Deazons</h1>
+        <h1 className="text-4xl font-bold mb-6">Sobre o Deazons</h1>
         
         <div className="prose prose-invert max-w-none">
           <p className="text-xl text-muted-foreground mb-8">
-            Deazons is a platform for movie and TV show enthusiasts that provides access to a vast 
-            collection of information about films, TV series, and entertainment industry personalities.
+            O Deazons é uma plataforma para entusiastas de filmes e séries de TV que fornece acesso a uma vasta 
+            coleção de informações sobre produções, seriados e personalidades da indústria do entretenimento.
           </p>
           
-          <h2 className="text-2xl font-semibold mt-8 mb-4">Our Mission</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">Nossa Missão</h2>
           <p>
-            Our goal is to create an enjoyable experience for cinema and television enthusiasts, 
-            offering an extensive database with detailed information about audiovisual productions 
-            from around the world.
+            Nosso objetivo é criar uma experiência agradável para os apaixonados por cinema e televisão, 
+            oferecendo um banco de dados extenso com informações detalhadas sobre produções audiovisuais 
+            de todo o mundo.
           </p>
           
-          <h2 className="text-2xl font-semibold mt-8 mb-4">Our Database</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">Nosso Banco de Dados</h2>
           <p>
-            Deazons uses The Movie Database (TMDB) API to provide accurate and up-to-date 
-            information about movies, TV shows, and personalities. This allows us to offer:
-          </p>
-          
-          <ul className="list-disc pl-6 my-4 space-y-2">
-            <li>Over 500,000 cataloged movies</li>
-            <li>Information about more than 100,000 TV series</li>
-            <li>Detailed profiles of actors, directors, and other professionals</li>
-            <li>Data about releases, ratings, and much more</li>
-          </ul>
-          
-          <h2 className="text-2xl font-semibold mt-8 mb-4">Technologies Used</h2>
-          <p>
-            Deazons is developed using modern technologies to ensure 
-            the best user experience:
+            O Deazons utiliza a API do The Movie Database (TMDB) para fornecer informações 
+            precisas e atualizadas sobre produções, séries de TV e personalidades. Isso nos permite oferecer:
           </p>
           
           <ul className="list-disc pl-6 my-4 space-y-2">
-            <li>React.js for a responsive and dynamic interface</li>
-            <li>Tailwind CSS for efficient styling</li>
-            <li>TypeScript for more robust and maintainable code</li>
-            <li>TMDB API for movie and TV show data</li>
+            <li>Mais de 500.000 filmes catalogados</li>
+            <li>Informações sobre mais de 100.000 séries de TV</li>
+            <li>Perfis detalhados de atores, diretores e outros profissionais</li>
+            <li>Dados sobre lançamentos, avaliações e muito mais</li>
           </ul>
           
-          <h2 className="text-2xl font-semibold mt-8 mb-4">Credits and Acknowledgments</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">Tecnologias Utilizadas</h2>
           <p>
-            This project would not be possible without The Movie Database (TMDB), which provides 
-            access to its extensive API. Deazons is not officially affiliated with TMDB.
+            O Deazons é desenvolvido utilizando as melhores tecnologias modernas para garantir 
+            a melhor experiência do usuário:
+          </p>
+          
+          <ul className="list-disc pl-6 my-4 space-y-2">
+            <li>React.js para uma interface dinâmica e responsiva</li>
+            <li>Tailwind CSS para estilos eficientes</li>
+            <li>TypeScript para um código mais robusto e manutenível</li>
+            <li>API TMDB para os dados de filmes e séries</li>
+          </ul>
+          
+          <h2 className="text-2xl font-semibold mt-8 mb-4">Créditos e Agradecimentos</h2>
+          <p>
+            Este projeto não seria possível sem O The Movie Database (TMDB), que disponibiliza 
+            acesso à sua rica API. O Deazons não é oficialmente afiliado ao TMDB.
           </p>
           
           <div className="my-8 flex items-center gap-4">
@@ -62,7 +61,7 @@ const About = () => {
                 rel="noopener noreferrer"
                 className="flex items-center gap-2"
               >
-                Visit TMDB
+                Visite o TMDB
                 <ExternalLink size={16} />
               </a>
             </Button>
@@ -74,21 +73,21 @@ const About = () => {
                 rel="noopener noreferrer"
                 className="flex items-center gap-2"
               >
-                API Documentation
+                Documentação da API
                 <ExternalLink size={16} />
               </a>
             </Button>
           </div>
           
-          <h2 className="text-2xl font-semibold mt-8 mb-4">Contact and Support</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">Contato e Suporte</h2>
           <p>
-            For more information about the project or to report issues, 
-            please contact us or visit our GitHub repository.
+            Para maiores informações sobre o projeto ou reportar problemas, 
+            por favor entre em contato conosco pelos canais oficiais ou pelo formulário do site.
           </p>
           
           <div className="mt-8">
             <Button asChild>
-              <Link to="/">Back to home page</Link>
+              <Link to="/">Voltar para a Página Inicial</Link>
             </Button>
           </div>
         </div>

@@ -260,7 +260,7 @@ const PersonDetails = () => {
                     
                     {sortedMovieCast.length > 20 && (
                       <Button variant="outline" className="mt-4" asChild>
-                        <Link to={`/people/${id}/movies`}>View all movies</Link>
+                        <Link to={`/pessoas/${id}/filmes`}>View all movies</Link>
                       </Button>
                     )}
                   </>
@@ -280,7 +280,7 @@ const PersonDetails = () => {
                     
                     {sortedTVCast.length > 20 && (
                       <Button variant="outline" className="mt-4" asChild>
-                        <Link to={`/people/${id}/tv`}>View all TV shows</Link>
+                        <Link to={`/pessoas/${id}/series`}>View all TV shows</Link>
                       </Button>
                     )}
                   </>

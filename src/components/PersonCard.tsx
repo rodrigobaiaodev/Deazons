@@ -11,7 +11,7 @@ interface PersonCardProps {
 const PersonCard = ({ person, className }: PersonCardProps) => {
   return (
     <Link 
-      to={`/people/${person.id}`} 
+      to={`/pessoas/${person.id}`} 
       className={cn("block transition-transform hover:scale-105", className)}
     >
       <div className="aspect-[2/3] rounded-lg overflow-hidden bg-card">

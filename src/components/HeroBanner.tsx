@@ -44,7 +44,7 @@ const HeroBanner = ({ movie }: HeroBannerProps) => {
               size="lg"
               className="gap-2 rounded-xl font-semibold px-8 shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all"
             >
-              <Link to={`/movies/${movie.id}`}>
+              <Link to={`/filmes/${movie.id}`}>
                 <Play size={18} fill="currentColor" />
                 Assistir
               </Link>
@@ -55,7 +55,7 @@ const HeroBanner = ({ movie }: HeroBannerProps) => {
               size="lg"
               className="gap-2 rounded-xl font-semibold border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/15 transition-all"
             >
-              <Link to={`/movies/${movie.id}`}>
+              <Link to={`/filmes/${movie.id}`}>
                 <Info size={18} />
                 Detalhes
               </Link>

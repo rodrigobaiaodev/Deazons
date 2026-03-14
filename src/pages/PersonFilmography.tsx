@@ -109,7 +109,7 @@ const PersonFilmography = () => {
       <div className="container">
         <div className="flex items-center gap-4 mb-8">
           <Button variant="outline" size="icon" asChild>
-            <Link to={`/people/${id}`}>
+            <Link to={`/pessoas/${id}`}>
               <ArrowLeft />
             </Link>
           </Button>
@@ -125,7 +125,7 @@ const PersonFilmography = () => {
               className="flex items-center gap-2"
               asChild
             >
-              <Link to={`/people/${id}/movies`}>
+              <Link to={`/pessoas/${id}/filmes`}>
                 <Film size={16} />
                 Filmes {movieCredits?.cast?.length ? `(${movieCredits.cast.length})` : ''}
               </Link>
@@ -135,7 +135,7 @@ const PersonFilmography = () => {
               className="flex items-center gap-2"
               asChild
             >
-              <Link to={`/people/${id}/tv`}>
+              <Link to={`/pessoas/${id}/series`}>
                 <Tv size={16} />
                 Séries {tvCredits?.cast?.length ? `(${tvCredits.cast.length})` : ''}
               </Link>

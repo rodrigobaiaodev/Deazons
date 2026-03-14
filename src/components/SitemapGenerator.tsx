@@ -52,7 +52,7 @@ const SitemapGenerator = () => {
         // Sample movie entries
         movies.results.slice(0, 3).forEach(movie => {
           console.info({
-            url: `https://deazons.com/movies/${movie.id}`,
+            url: `https://deazons.com/filmes/${movie.id}`,
             lastmod: new Date().toISOString().split('T')[0],
             changefreq: 'weekly',
             priority: '0.8'
@@ -62,7 +62,7 @@ const SitemapGenerator = () => {
         // Sample show entries
         shows.results.slice(0, 3).forEach(show => {
           console.info({
-            url: `https://deazons.com/tvs/${show.id}`,
+            url: `https://deazons.com/series/${show.id}`,
             lastmod: new Date().toISOString().split('T')[0],
             changefreq: 'weekly',
             priority: '0.8'
@@ -72,7 +72,7 @@ const SitemapGenerator = () => {
         // Sample people entries
         people.results.slice(0, 3).forEach(person => {
           console.info({
-            url: `https://deazons.com/people/${person.id}`,
+            url: `https://deazons.com/pessoas/${person.id}`,
             lastmod: new Date().toISOString().split('T')[0],
             changefreq: 'monthly',
             priority: '0.7'

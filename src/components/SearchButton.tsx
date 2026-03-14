@@ -19,7 +19,7 @@ const SearchButton = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      navigate(`/pesquisa?q=${encodeURIComponent(query.trim())}`);
       setOpen(false);
       setQuery("");
     }

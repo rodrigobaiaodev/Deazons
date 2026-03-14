@@ -29,7 +29,7 @@ const NotFound = () => {
             <Link to="/">Voltar para Home</Link>
           </Button>
           <Button variant="outline" asChild size="lg">
-            <Link to="/search">Buscar Conteúdo</Link>
+            <Link to="/pesquisa">Buscar Conteúdo</Link>
           </Button>
         </div>
       </div>

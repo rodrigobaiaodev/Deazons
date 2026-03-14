@@ -89,7 +89,7 @@ const TermsOfService = () => {
             <h2 className="text-xl font-semibold mb-3">9. Contato</h2>
             <p>
               Se você tiver dúvidas sobre estes Termos, entre em contato conosco em: 
-              <Link to="/contact" className="text-deazon-400 hover:text-deazon-300 ml-1">
+              <Link to="/contato" className="text-deazon-400 hover:text-deazon-300 ml-1">
                 página de contato
               </Link>.
             </p>

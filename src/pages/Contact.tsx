@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +19,8 @@ const Contact = () => {
     // Form submission simulation
     setTimeout(() => {
       toast({
-        title: "Message sent",
-        description: "Thank you for contacting us. We'll get back to you soon.",
+        title: "Mensagem enviada",
+        description: "Obrigado por nos contatar. Responderemos em breve.",
       });
       setName("");
       setEmail("");
@@ -34,23 +33,23 @@ const Contact = () => {
   return (
     <div className="min-h-screen pt-8 pb-16">
       <div className="container max-w-4xl">
-        <h1 className="text-3xl font-bold mb-6">Contact Us</h1>
+        <h1 className="text-3xl font-bold mb-6">Entre em Contato</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <div>
             <p className="text-muted-foreground mb-6">
-              Have a question, suggestion, or feedback about Deazons? 
-              Fill out the form and we'll get back to you as soon as possible.
+              Tem alguma dúvida, sugestão ou feedback sobre o Deazons? 
+              Preencha o formulário e retornaremos o mais rápido possível.
             </p>
             
             <div className="space-y-4">
               <div>
-                <h3 className="font-medium mb-2">Email</h3>
-                <p className="text-muted-foreground">contact@deazons.com</p>
+                <h3 className="font-medium mb-2">E-mail</h3>
+                <p className="text-muted-foreground">contato@deazons.com.br</p>
               </div>
               
               <div>
-                <h3 className="font-medium mb-2">Social Media</h3>
+                <h3 className="font-medium mb-2">Redes Sociais</h3>
                 <div className="flex space-x-4">
                   <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
                     Twitter
@@ -70,60 +69,60 @@ const Contact = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block mb-1 text-sm">
-                  Name
+                  Nome
                 </label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
+                  placeholder="Seu nome completo"
                   required
                 />
               </div>
               
               <div>
                 <label htmlFor="email" className="block mb-1 text-sm">
-                  Email
+                  E-mail
                 </label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@example.com"
+                  placeholder="seu.email@exemplo.com"
                   required
                 />
               </div>
               
               <div>
                 <label htmlFor="subject" className="block mb-1 text-sm">
-                  Subject
+                  Assunto
                 </label>
                 <Input
                   id="subject"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Message subject"
+                  placeholder="Assunto da mensagem"
                   required
                 />
               </div>
               
               <div>
                 <label htmlFor="message" className="block mb-1 text-sm">
-                  Message
+                  Mensagem
                 </label>
                 <Textarea
                   id="message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type your message here..."
+                  placeholder="Digite sua mensagem aqui..."
                   rows={5}
                   required
                 />
               </div>
               
               <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? "Sending..." : "Send Message"}
+                {isSubmitting ? "Enviando..." : "Enviar Mensagem"}
               </Button>
             </form>
           </div>

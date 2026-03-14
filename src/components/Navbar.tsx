@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 
 const navLinks = [
   { path: "/", label: "Início" },
-  { path: "/movies", label: "Filmes" },
-  { path: "/tv", label: "Séries" },
-  { path: "/people", label: "Pessoas" },
+  { path: "/filmes", label: "Filmes" },
+  { path: "/series", label: "Séries" },
+  { path: "/pessoas", label: "Pessoas" },
   { path: "/noticias", label: "Notícias" },
 ];
 

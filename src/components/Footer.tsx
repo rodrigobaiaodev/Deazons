@@ -52,9 +52,9 @@ const Footer = () => {
             <h3 className="font-bold text-sm uppercase tracking-wider text-foreground mb-4">Navegação</h3>
             <ul className="space-y-2.5 text-sm text-muted-foreground">
               <li><Link to="/" className="hover:text-primary transition-colors">Início</Link></li>
-              <li><Link to="/movies" className="hover:text-primary transition-colors">Filmes</Link></li>
-              <li><Link to="/tv" className="hover:text-primary transition-colors">Séries</Link></li>
-              <li><Link to="/people" className="hover:text-primary transition-colors">Pessoas</Link></li>
+              <li><Link to="/filmes" className="hover:text-primary transition-colors">Filmes</Link></li>
+              <li><Link to="/series" className="hover:text-primary transition-colors">Séries</Link></li>
+              <li><Link to="/pessoas" className="hover:text-primary transition-colors">Pessoas</Link></li>
             </ul>
           </div>
           
@@ -62,11 +62,11 @@ const Footer = () => {
           <div>
             <h3 className="font-bold text-sm uppercase tracking-wider text-foreground mb-4">Categorias</h3>
             <ul className="space-y-2.5 text-sm text-muted-foreground">
-              <li><Link to="/movies?genre=28" className="hover:text-primary transition-colors">Ação</Link></li>
-              <li><Link to="/movies?genre=35" className="hover:text-primary transition-colors">Comédia</Link></li>
-              <li><Link to="/movies?genre=18" className="hover:text-primary transition-colors">Drama</Link></li>
-              <li><Link to="/movies?genre=27" className="hover:text-primary transition-colors">Terror</Link></li>
-              <li><Link to="/movies?genre=10749" className="hover:text-primary transition-colors">Romance</Link></li>
+              <li><Link to="/filmes?genre=28" className="hover:text-primary transition-colors">Ação</Link></li>
+              <li><Link to="/filmes?genre=35" className="hover:text-primary transition-colors">Comédia</Link></li>
+              <li><Link to="/filmes?genre=18" className="hover:text-primary transition-colors">Drama</Link></li>
+              <li><Link to="/filmes?genre=27" className="hover:text-primary transition-colors">Terror</Link></li>
+              <li><Link to="/filmes?genre=10749" className="hover:text-primary transition-colors">Romance</Link></li>
             </ul>
           </div>
           
@@ -74,10 +74,10 @@ const Footer = () => {
           <div>
             <h3 className="font-bold text-sm uppercase tracking-wider text-foreground mb-4">Sobre</h3>
             <ul className="space-y-2.5 text-sm text-muted-foreground">
-              <li><Link to="/about" className="hover:text-primary transition-colors">Sobre nós</Link></li>
-              <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacidade</Link></li>
-              <li><Link to="/terms" className="hover:text-primary transition-colors">Termos de Uso</Link></li>
-              <li><Link to="/contact" className="hover:text-primary transition-colors">Contato</Link></li>
+              <li><Link to="/sobre" className="hover:text-primary transition-colors">Sobre nós</Link></li>
+              <li><Link to="/privacidade" className="hover:text-primary transition-colors">Privacidade</Link></li>
+              <li><Link to="/termos" className="hover:text-primary transition-colors">Termos de Uso</Link></li>
+              <li><Link to="/contato" className="hover:text-primary transition-colors">Contato</Link></li>
               <li><a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">TMDB</a></li>
             </ul>
           </div>

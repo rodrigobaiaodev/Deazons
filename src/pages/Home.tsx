@@ -78,7 +78,7 @@ const Home = () => {
             title="Em Alta"
             items={trendingMovies}
             type="movie"
-            seeAllLink="/movies"
+            seeAllLink="/filmes"
           />
         )}
         
@@ -87,7 +87,7 @@ const Home = () => {
             title="Filmes Populares"
             items={popularMovies}
             type="movie"
-            seeAllLink="/movies"
+            seeAllLink="/filmes"
           />
         )}
         
@@ -96,7 +96,7 @@ const Home = () => {
             title="Filmes Mais Bem Avaliados"
             items={topRatedMovies}
             type="movie"
-            seeAllLink="/movies?filter=top_rated"
+            seeAllLink="/filmes?filter=top_rated"
           />
         )}
         
@@ -105,7 +105,7 @@ const Home = () => {
             title="Próximos Lançamentos"
             items={upcomingMovies}
             type="movie"
-            seeAllLink="/movies?filter=upcoming"
+            seeAllLink="/filmes?filter=upcoming"
           />
         )}
 
@@ -116,7 +116,7 @@ const Home = () => {
             title="Séries Populares"
             items={popularTVShows}
             type="tv"
-            seeAllLink="/tv"
+            seeAllLink="/series"
           />
         )}
         
@@ -125,7 +125,7 @@ const Home = () => {
             title="Séries Mais Bem Avaliadas"
             items={topRatedTVShows}
             type="tv"
-            seeAllLink="/tv?filter=top_rated"
+            seeAllLink="/series?filter=top_rated"
           />
         )}
       </div>

@@ -205,7 +205,8 @@ export const fetchAndProcessFeeds = async (
              slug: articleData.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
              content: articleData.content,
              meta_description: articleData.meta_description,
-             status: 'draft',
+             status: 'published',
+             published_at: new Date().toISOString(),
              image_url: imageUrl,
              image_alt: altText,
              tags: articleData.tags || extractTags(item),
@@ -221,7 +222,7 @@ export const fetchAndProcessFeeds = async (
              console.error('Error inserting article:', insertError);
              onProgress(`❌ Erro no banco ao salvar: ${articleData.title.substring(0, 30)} - ${insertError.message}`);
           } else {
-             onProgress(`✅ Salvo com sucesso (Draft): ${articleData.title.substring(0, 30)}...`);
+             onProgress(`✅ Salvo e Publicado com sucesso: ${articleData.title.substring(0, 30)}...`);
           }
 
         } catch (geminiError: any) {

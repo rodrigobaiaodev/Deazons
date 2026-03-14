@@ -13,11 +13,11 @@ interface MobileMenuProps {
 
 const navItems = [
   { path: "/", label: "Início", icon: Home },
-  { path: "/movies", label: "Filmes", icon: Film },
-  { path: "/tv", label: "Séries", icon: Tv },
-  { path: "/people", label: "Pessoas", icon: Users },
+  { path: "/filmes", label: "Filmes", icon: Film },
+  { path: "/series", label: "Séries", icon: Tv },
+  { path: "/pessoas", label: "Pessoas", icon: Users },
   { path: "/noticias", label: "Notícias", icon: Newspaper },
-  { path: "/about", label: "Sobre", icon: Info },
+  { path: "/sobre", label: "Sobre", icon: Info },
 ];
 
 const MobileMenu = ({ open, onClose }: MobileMenuProps) => {

@@ -59,7 +59,7 @@ const MovieDetails = () => {
         setSimilarMovies(similarData.results);
 
         // Redirect to slug URL if not already there
-        const expectedSlug = moviePath(movieData.id, movieData.title).replace("/movies/", "");
+        const expectedSlug = moviePath(movieData.id, movieData.title).replace("/filmes/", "");
         if (slug !== expectedSlug) {
           navigate(moviePath(movieData.id, movieData.title), { replace: true });
         }
@@ -205,7 +205,7 @@ const MovieDetails = () => {
               {/* Genres */}
               <div className="flex flex-wrap gap-2 mt-4">
                 {movie.genres?.map(genre => (
-                  <Link key={genre.id} to={`/movies?genre=${genre.id}`}>
+                  <Link key={genre.id} to={`/filmes?genre=${genre.id}`}>
                     <Badge variant="secondary" className="rounded-full hover:bg-primary hover:text-white transition-colors">
                       {genre.name}
                     </Badge>
@@ -262,7 +262,7 @@ const MovieDetails = () => {
                         <dd>
                           {directors.map((d, i) => (
                             <span key={d.id}>
-                              <Link to={`/people/${d.id}`} className="hover:text-primary transition-colors font-medium">
+                              <Link to={`/pessoas/${d.id}`} className="hover:text-primary transition-colors font-medium">
                                 {d.name}
                               </Link>
                               {i < directors.length - 1 && ", "}
@@ -322,7 +322,7 @@ const MovieDetails = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {cast.length > 0 ? (
                     cast.map(person => (
-                      <Link key={person.id} to={`/people/${person.id}`} className="block group">
+                      <Link key={person.id} to={`/pessoas/${person.id}`} className="block group">
                         <div className="aspect-[2/3] rounded-xl overflow-hidden bg-card">
                           <img
                             src={getImageUrl(person.profile_path, "w185")}
@@ -343,7 +343,7 @@ const MovieDetails = () => {
                 </div>
                 <div className="mt-6">
                   <Button asChild variant="outline" className="rounded-xl">
-                    <Link to={`/movies/${slug}/cast`}>Ver elenco completo</Link>
+                    <Link to={`/filmes/${slug}/cast`}>Ver elenco completo</Link>
                   </Button>
                 </div>
               </TabsContent>
@@ -380,7 +380,7 @@ const MovieDetails = () => {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-bold">Elenco Principal</h3>
-                <Link to={`/movies/${slug}/cast`} className="text-xs font-semibold text-primary hover:text-primary/80 uppercase tracking-wider">
+                <Link to={`/filmes/${slug}/cast`} className="text-xs font-semibold text-primary hover:text-primary/80 uppercase tracking-wider">
                   Ver todos
                 </Link>
               </div>
@@ -388,7 +388,7 @@ const MovieDetails = () => {
                 {cast.slice(0, 5).map(person => (
                   <Link
                     key={person.id}
-                    to={`/people/${person.id}`}
+                    to={`/pessoas/${person.id}`}
                     className="flex items-center gap-3 hover:bg-accent/50 p-2 -mx-2 rounded-xl transition-colors"
                   >
                     <img

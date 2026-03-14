@@ -46,20 +46,20 @@ const App = () => (
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/movies" element={<Movies />} />
-            <Route path="/movies/:slug" element={<MovieDetails />} />
-            <Route path="/movies/:slug/cast" element={<MovieCast />} />
-            <Route path="/tv" element={<TVShows />} />
-            <Route path="/tvs/:slug" element={<TVShowDetails />} />
-            <Route path="/tvs/:slug/cast" element={<TVShowCast />} />
-            <Route path="/people" element={<People />} />
-            <Route path="/people/:id" element={<PersonDetails />} />
-            <Route path="/people/:id/:mediaType" element={<PersonFilmography />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/contact" element={<Contact />} />
+            <Route path="/filmes" element={<Movies />} />
+            <Route path="/filmes/:slug" element={<MovieDetails />} />
+            <Route path="/filmes/:slug/cast" element={<MovieCast />} />
+            <Route path="/series" element={<TVShows />} />
+            <Route path="/series/:slug" element={<TVShowDetails />} />
+            <Route path="/series/:slug/cast" element={<TVShowCast />} />
+            <Route path="/pessoas" element={<People />} />
+            <Route path="/pessoas/:id" element={<PersonDetails />} />
+            <Route path="/pessoas/:id/:mediaType" element={<PersonFilmography />} />
+            <Route path="/pesquisa" element={<Search />} />
+            <Route path="/sobre" element={<About />} />
+            <Route path="/privacidade" element={<PrivacyPolicy />} />
+            <Route path="/termos" element={<TermsOfService />} />
+            <Route path="/contato" element={<Contact />} />
             <Route path="/noticias" element={<NewsList />} />
             <Route path="/noticias/:id" element={<NewsArticlePage />} />
             <Route path="/admin/rss" element={<AdminRSS />} />

@@ -68,10 +68,14 @@ async function generateSitemaps() {
   // 1. Static Pages
   const pagesUrls = [
     { loc: `${BASE_URL}/`, priority: '1.0' },
+    { loc: `${BASE_URL}/filmes`, priority: '0.9' },
+    { loc: `${BASE_URL}/series`, priority: '0.9' },
     { loc: `${BASE_URL}/noticias`, priority: '0.9' },
-    { loc: `${BASE_URL}/filmes`, priority: '0.8' },
-    { loc: `${BASE_URL}/series`, priority: '0.8' },
-    { loc: `${BASE_URL}/pessoas`, priority: '0.7' },
+    { loc: `${BASE_URL}/pessoas`, priority: '0.8' },
+    { loc: `${BASE_URL}/sobre`, priority: '0.5' },
+    { loc: `${BASE_URL}/privacidade`, priority: '0.5' },
+    { loc: `${BASE_URL}/termos`, priority: '0.5' },
+    { loc: `${BASE_URL}/contato`, priority: '0.5' },
   ];
   fs.writeFileSync(path.join(publicDir, 'sitemap-pages.xml'), createSitemapXml(pagesUrls));
   sitemaps.push('sitemap-pages.xml');
