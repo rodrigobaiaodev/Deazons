@@ -71,11 +71,24 @@ const extractImage = (item) => {
   return null;
 };
 
-const getTMDBImages = async (title) => {
+const getTMDBImages = async (title, existingImageUrl = null) => {
   const images = { main: null, extra1: null, extra2: null };
+  
+  // Helper to extract the core filename from a TMDB or any image URL
+  const getPath = (url) => {
+    if (!url) return null;
+    const parts = url.split('/');
+    const last = parts[parts.length - 1];
+    return last.split('?')[0]; // exclude query params if any
+  };
+
+  const existingPath = getPath(existingImageUrl);
+  const pathsAdded = new Set();
+  if (existingPath) pathsAdded.add(existingPath);
+
   try {
     const searchTitle = title
-      .replace(/Review|Crítica|Trailer|Teaser|Confirmado|Rumor|Entrevista/gi, '')
+      .replace(/Review|Crítica|Trailer|Teaser|Confirmado|Rumor|Entrevista|Veja|Assista/gi, '')
       .split(':')[0]
       .split('-')[0]
       .trim();
@@ -84,30 +97,39 @@ const getTMDBImages = async (title) => {
 
     const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${tmdbKey}&language=pt-BR&query=${encodeURIComponent(searchTitle)}`);
     const data = await res.json();
-    const results = (data.results || []).filter(r => r.media_type === 'movie' || r.media_type === 'tv');
+    const results = (data.results || []).filter(r => r.media_type === 'movie' || r.media_type === 'tv' || r.media_type === 'person');
 
     if (results.length > 0) {
+      // Pick main image from first result if not provided by RSS
       const first = results[0];
-      if (first.backdrop_path) images.main = `https://image.tmdb.org/t/p/w1280${first.backdrop_path}`;
-      else if (first.poster_path) images.main = `https://image.tmdb.org/t/p/w780${first.poster_path}`;
+      const mainPath = first.backdrop_path || first.poster_path;
+      if (mainPath) {
+        const cleanMainPath = mainPath.replace('/', '');
+        images.main = `https://image.tmdb.org/t/p/w1280${mainPath}`;
+        pathsAdded.add(cleanMainPath);
+      }
 
       const extraImages = [];
-      results.forEach(res => {
-        if (res.backdrop_path) {
-          const url = `https://image.tmdb.org/t/p/w780${res.backdrop_path}`;
-          if (url !== images.main && !extraImages.includes(url)) extraImages.push(url);
+      // Collect more images from results to ensure variety
+      for (const res of results) {
+        const potentialPaths = [res.backdrop_path, res.poster_path].filter(Boolean);
+        for (const p of potentialPaths) {
+          const cleanP = p.replace('/', '');
+          if (!pathsAdded.has(cleanP)) {
+            extraImages.push(`https://image.tmdb.org/t/p/w780${p}`);
+            pathsAdded.add(cleanP);
+            if (extraImages.length >= 5) break; // Get a pool of extras
+          }
         }
-        if (res.poster_path) {
-          const url = `https://image.tmdb.org/t/p/w780${res.poster_path}`;
-          if (url !== images.main && !extraImages.includes(url)) extraImages.push(url);
-        }
-      });
+        if (extraImages.length >= 5) break;
+      }
 
       if (extraImages.length > 0) images.extra1 = extraImages[0];
       if (extraImages.length > 1) images.extra2 = extraImages[1];
     }
     return images;
   } catch (error) {
+    console.error('Erro ao buscar imagens no TMDB:', error.message);
     return images;
   }
 };
@@ -140,12 +162,12 @@ async function main() {
         console.log(`Processando: ${item.title}`);
         
         let imageUrl = extractImage(item);
-        const tmdbImages = await getTMDBImages(item.title);
+        const tmdbImages = await getTMDBImages(item.title, imageUrl);
         if (!imageUrl) imageUrl = tmdbImages.main;
 
         const prompt = `
 Aja como um redator especialista em cultura pop (filmes, séries, streaming).
-Sua tarefa é reescrever o texto do artigo de uma forma original.
+Sua tarefa é reescrever o texto do artigo de uma forma original e profissional para o site Deazons.
 
 Título Original: ${item.title}
 Conteúdo Base: ${item.content || item.description || ''}
@@ -161,13 +183,19 @@ Gere um JSON com:
 Regras do Content:
 - Use H2 para no mínimo 4 subtítulos ao longo do texto.
 - Não insira o título original no content.
-- Comece de vez em um parágrafo inicial forte dando a notícia/fato principal.
+- Comece com um parágrafo inicial forte dando a notícia/fato principal.
+- Use um tom profissional e envolvente.
 
-${imageUrl ? `Sempre inclua NO TOPO do primeiro parágrafo: <img src="${imageUrl}" alt="Imagem do Post" style="width:100%;object-fit:cover;border-radius:12px;margin-bottom:20px;" />` : ''}
+Imagens disponíveis (USE APENAS SE FORNECIDAS E NÃO REPITA):
+1. Destaque: ${imageUrl || 'N/A'}
+2. Extra 1: ${tmdbImages.extra1 || 'N/A'}
+3. Extra 2: ${tmdbImages.extra2 || 'N/A'}
 
-${tmdbImages.extra1 ? `Logo após o primeiro H2, insira e comente sobre essa cena/poster: <img src="${tmdbImages.extra1}" alt="Cena 1" style="width:100%;border-radius:12px;margin:20px 0;" />` : ''}
-
-${tmdbImages.extra2 ? `Logo após o terceiro H2, insira: <img src="${tmdbImages.extra2}" alt="Cena 2" style="width:100%;border-radius:12px;margin:20px 0;" />` : ''}
+REGRAS DE IMAGEM:
+- Se houver Imagem de Destaque, coloque-a NO TOPO do primeiro parágrafo: <img src="URL" alt="Descrição" style="width:100%;object-fit:cover;border-radius:12px;margin-bottom:20px;" />
+- Se houver Extra 1 e for DIFERENTE da de Destaque, insira-a após o primeiro ou segundo H2.
+- Se houver Extra 2 e for DIFERENTE das anteriores, insira-a após o terceiro H2.
+- JAMAIS repita a mesma imagem no corpo do texto. Se só tiver uma imagem, use apenas uma vez no topo.
 `;
 
         try {

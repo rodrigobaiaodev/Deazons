@@ -30,6 +30,7 @@ const NewsArticlePage = () => {
         setArticle(data);
         
         // --- SEO & META TAGS ---
+        const pageUrl = `https://deazons.com/noticias/${data.slug}`;
         document.title = `${data.title} | Deazons`;
         
         // Update Meta Description
@@ -37,13 +38,21 @@ const NewsArticlePage = () => {
         updateMetaTag('og:title', data.title);
         updateMetaTag('og:description', data.meta_description);
         updateMetaTag('og:image', data.image_url);
+        updateMetaTag('og:url', pageUrl);
         updateMetaTag('og:type', 'article');
+        updateMetaTag('twitter:title', data.title);
+        updateMetaTag('twitter:description', data.meta_description);
+        updateMetaTag('twitter:image', data.image_url);
+
+        // Canonical Link
+        updateCanonicalTag(pageUrl);
 
         // JSON-LD NewsArticle
         const jsonLd = {
           "@context": "https://schema.org",
           "@type": "NewsArticle",
           "headline": data.title,
+          "description": data.meta_description,
           "image": [data.image_url],
           "datePublished": data.published_at || data.created_at,
           "dateModified": data.updated_at || data.created_at,
@@ -51,7 +60,19 @@ const NewsArticlePage = () => {
             "@type": "Organization",
             "name": "Equipe Deazons",
             "url": "https://deazons.com"
-          }]
+          }],
+          "publisher": {
+            "@type": "Organization",
+            "name": "Deazons",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://deazons.com/deazons-logo.png"
+            }
+          },
+          "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": pageUrl
+          }
         };
         
         let script = document.getElementById('json-ld-article');
@@ -81,8 +102,9 @@ const NewsArticlePage = () => {
       let tag = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
       if (!tag) {
         tag = document.createElement('meta');
-        if (name.startsWith('og:')) {
-          tag.setAttribute('property', name);
+        if (name.startsWith('og:') || name.startsWith('twitter:')) {
+          const attr = name.startsWith('og:') ? 'property' : 'name';
+          tag.setAttribute(attr, name);
         } else {
           tag.setAttribute('name', name);
         }
@@ -91,16 +113,46 @@ const NewsArticlePage = () => {
       tag.setAttribute('content', content);
     }
 
+    const updateCanonicalTag = (url: string) => {
+      let link: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
+      if (!link) {
+        link = document.createElement('link');
+        link.setAttribute('rel', 'canonical');
+        document.head.appendChild(link);
+      }
+      link.setAttribute('href', url);
+    };
+
     if (id) {
       fetchArticle();
     }
     
     return () => {
-      // Cleanup JSON-LD on unmount
+      // Cleanup
       const script = document.getElementById('json-ld-article');
       if (script) script.remove();
+      // Reset title to default if needed or handled by other pages
     };
   }, [id, isPreview]);
+
+  // Helper to generate Table of Contents from content
+  const generateTOC = (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const headers = doc.querySelectorAll('h2');
+    return Array.from(headers).map((h, index) => ({
+      text: h.textContent,
+      id: `section-${index}`
+    }));
+  };
+
+  const toc = article ? generateTOC(article.content) : [];
+
+  // Inject IDs to H2s in content
+  const contentWithIds = article?.content.replace(/<h2>/g, (match, offset, string) => {
+    const index = string.slice(0, offset).split('<h2>').length - 1;
+    return `<h2 id="section-${index}">`;
+  });
 
   const shareOnSocial = (platform: string) => {
     const url = window.location.href;
@@ -154,14 +206,16 @@ const NewsArticlePage = () => {
         >
           <ChevronLeft className="w-4 h-4" />
           Voltar para Noticias
-        </Button>
-
-        {/* Cabeçalho do Artigo (Metadados) */}
+        </Button>        {/* Cabeçalho do Artigo (Metadados) */}
         <header className="mb-6">
           <Badge className="mb-4 bg-primary/20 text-primary hover:bg-primary/30 px-3 py-1 rounded-full text-sm font-semibold border-none">
             {article.category}
           </Badge>
           
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6 leading-tight text-white">
+            {article.title}
+          </h1>
+
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground border-b border-border/50 pb-6 mb-8">
             <div className="flex items-center gap-2">
               <CalendarDays className="w-4 h-4" />
@@ -188,20 +242,44 @@ const NewsArticlePage = () => {
           </div>
         </header>
 
+        {/* Table of Contents - SEO Booster & UX */}
+        {toc.length > 0 && (
+          <div className="mb-10 p-6 rounded-2xl bg-secondary/10 border border-border/50">
+            <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-primary rounded-full" />
+              Neste artigo:
+            </h4>
+            <nav className="flex flex-col gap-2">
+              {toc.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className="text-muted-foreground hover:text-primary transition-colors text-sm py-1 border-l-2 border-transparent hover:border-primary/30 pl-3"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  {item.text}
+                </a>
+              ))}
+            </nav>
+          </div>
+        )}
+
         {/* Conteúdo Renderizado a partir do Gemini com Estilização Premium */}
         <div 
           className="prose prose-invert prose-lg max-w-none 
-            prose-h1:text-4xl prose-h1:md:text-5xl prose-h1:font-extrabold prose-h1:tracking-tight prose-h1:mb-8 prose-h1:leading-tight
-            prose-h2:text-2xl prose-h2:font-bold prose-h2:text-primary prose-h2:mt-12 prose-h2:mb-4
+            prose-h1:hidden
+            prose-h2:text-2xl prose-h2:font-bold prose-h2:text-primary prose-h2:mt-12 prose-h2:mb-4 prose-h2:scroll-mt-24
             prose-p:text-muted-foreground prose-p:leading-[1.8] prose-p:mb-6
             prose-img:rounded-2xl prose-img:border prose-img:border-border/30 prose-img:shadow-lg prose-img:w-full
             prose-a:text-primary hover:prose-a:text-primary/80"
-          dangerouslySetInnerHTML={{ __html: article.content }}
+          dangerouslySetInnerHTML={{ __html: contentWithIds || '' }}
         />
 
         <style dangerouslySetInnerHTML={{ __html: `
           .prose h2 { color: hsl(var(--primary)) !important; }
-          .prose h1 { color: #ffffff !important; font-weight: 800; }
         `}} />
 
         {/* Author Card exclusivo */}

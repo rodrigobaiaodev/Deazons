@@ -58,6 +58,24 @@ const TVShowDetails = () => {
         setVideos(videosData.results);
         setSimilarShows(similarData.results);
 
+        // --- SEO & META TAGS ---
+        const pageUrl = `https://deazons.com${tvPath(showData.id, showData.name)}`;
+        const pageTitle = `${showData.name} (${new Date(showData.first_air_date).getFullYear()}) | Deazons`;
+        const pageDesc = showData.overview ? `${showData.overview.substring(0, 160)}...` : `Veja detalhes, episódios, elenco e onde assistir à série ${showData.name} no Deazons.`;
+        const pageImg = getImageUrl(showData.backdrop_path, BACKDROP_SIZES.ORIGINAL);
+
+        document.title = pageTitle;
+        updateMetaTag('description', pageDesc);
+        updateMetaTag('og:title', pageTitle);
+        updateMetaTag('og:description', pageDesc);
+        updateMetaTag('og:image', pageImg);
+        updateMetaTag('og:url', pageUrl);
+        updateMetaTag('og:type', 'video.tv_show');
+        updateMetaTag('twitter:title', pageTitle);
+        updateMetaTag('twitter:description', pageDesc);
+        updateMetaTag('twitter:image', pageImg);
+        updateCanonicalTag(pageUrl);
+
         // Redirect to slug URL if needed
         const expectedSlug = tvPath(showData.id, showData.name).replace("/series/", "");
         if (slug !== expectedSlug) {
@@ -80,7 +98,35 @@ const TVShowDetails = () => {
       }
     };
 
-    fetchTVShowDetails();
+    const updateMetaTag = (name: string, content: string) => {
+      if (!content) return;
+      let tag = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        if (name.startsWith('og:') || name.startsWith('twitter:')) {
+          const attr = name.startsWith('og:') ? 'property' : 'name';
+          tag.setAttribute(attr, name);
+        } else {
+          tag.setAttribute('name', name);
+        }
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    }
+
+    const updateCanonicalTag = (url: string) => {
+      let link: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
+      if (!link) {
+        link = document.createElement('link');
+        link.setAttribute('rel', 'canonical');
+        document.head.appendChild(link);
+      }
+      link.setAttribute('href', url);
+    };
+
+    if (slug) {
+      fetchTVShowDetails();
+    }
   }, [slug, toast, navigate]);
 
   const formatEpisodeRuntime = (minutes: number[] | undefined) => {

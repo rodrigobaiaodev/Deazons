@@ -158,7 +158,8 @@ ${sitemaps.map(sm => `  <sitemap>
   </sitemap>`).join('\n')}
 </sitemapindex>`;
   fs.writeFileSync(path.join(publicDir, 'sitemap-index.xml'), indexXml);
-  console.log('✅ sitemap-index.xml gerado.');
+  fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), indexXml);
+  console.log('✅ sitemap-index.xml e sitemap.xml gerados.');
 
   console.log('✨ Processo concluído com sucesso!');
 }

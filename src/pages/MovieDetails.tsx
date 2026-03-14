@@ -58,6 +58,24 @@ const MovieDetails = () => {
         setVideos(videosData.results);
         setSimilarMovies(similarData.results);
 
+        // --- SEO & META TAGS ---
+        const pageUrl = `https://deazons.com${moviePath(movieData.id, movieData.title)}`;
+        const pageTitle = `${movieData.title} (${new Date(movieData.release_date).getFullYear()}) | Deazons`;
+        const pageDesc = movieData.overview ? `${movieData.overview.substring(0, 160)}...` : `Veja detalhes, elenco e onde assistir ao filme ${movieData.title} no Deazons.`;
+        const pageImg = getImageUrl(movieData.backdrop_path, BACKDROP_SIZES.ORIGINAL);
+
+        document.title = pageTitle;
+        updateMetaTag('description', pageDesc);
+        updateMetaTag('og:title', pageTitle);
+        updateMetaTag('og:description', pageDesc);
+        updateMetaTag('og:image', pageImg);
+        updateMetaTag('og:url', pageUrl);
+        updateMetaTag('og:type', 'video.movie');
+        updateMetaTag('twitter:title', pageTitle);
+        updateMetaTag('twitter:description', pageDesc);
+        updateMetaTag('twitter:image', pageImg);
+        updateCanonicalTag(pageUrl);
+
         // Redirect to slug URL if not already there
         const expectedSlug = moviePath(movieData.id, movieData.title).replace("/filmes/", "");
         if (slug !== expectedSlug) {
@@ -79,8 +97,36 @@ const MovieDetails = () => {
         setLoading(false);
       }
     };
-    
-    fetchMovieDetails();
+
+    const updateMetaTag = (name: string, content: string) => {
+      if (!content) return;
+      let tag = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        if (name.startsWith('og:') || name.startsWith('twitter:')) {
+          const attr = name.startsWith('og:') ? 'property' : 'name';
+          tag.setAttribute(attr, name);
+        } else {
+          tag.setAttribute('name', name);
+        }
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    }
+
+    const updateCanonicalTag = (url: string) => {
+      let link: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
+      if (!link) {
+        link = document.createElement('link');
+        link.setAttribute('rel', 'canonical');
+        document.head.appendChild(link);
+      }
+      link.setAttribute('href', url);
+    };
+
+    if (slug) {
+      fetchMovieDetails();
+    }
   }, [slug, toast, navigate]);
   
   const formatRuntime = (minutes: number | null) => {
