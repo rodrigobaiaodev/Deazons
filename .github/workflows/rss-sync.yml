@@ -1,10 +1,23 @@
 name: Auto Sync RSS & Sitemap
 
+# Automação DESABILITADA temporariamente (schedule removido)
+# Para reativar: adicione os secrets abaixo no GitHub e restaure o schedule:
+#
+# Secrets necessários (Settings > Secrets and variables > Actions):
+#   - VITE_SUPABASE_URL
+#   - VITE_SUPABASE_ANON_KEY
+#   - VITE_SUPABASE_SERVICE_ROLE_KEY
+#   - VITE_GEMINI_API_KEY
+#   - VITE_TMDB_API_KEY (opcional, tem fallback)
+#
+# Schedule para reativar (a cada 3 horas):
+# on:
+#   schedule:
+#     - cron: '0 */3 * * *'
+#   workflow_dispatch:
+
 on:
-  schedule:
-    # Roda a cada 3 horas
-    - cron: '0 */3 * * *'
-  workflow_dispatch: # Permite rodar manualmente pelo Github
+  workflow_dispatch: # Apenas manual - sem execução automática
 
 jobs:
   sync_and_publish:
@@ -29,4 +42,3 @@ jobs:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
           VITE_TMDB_API_KEY: ${{ secrets.VITE_TMDB_API_KEY }}
         run: node scripts/auto-sync-rss.js
-  
