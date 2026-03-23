@@ -69,13 +69,13 @@ const Home = () => {
   }
 
   return (
-    <div className="pb-10">
+    <div className="pb-16 bg-background min-h-screen">
       {trendingMovies.length > 0 && <HeroBanner movie={trendingMovies[0]} />}
       
-      <div className="container space-y-2 pt-8">
+      <div className="container space-y-4 md:space-y-8 pt-10">
         {trendingMovies.length > 0 && (
           <MediaRow
-            title="Em Alta"
+            title="Em Alta Hoje"
             items={trendingMovies}
             type="movie"
             seeAllLink="/filmes"
@@ -93,7 +93,7 @@ const Home = () => {
         
         {topRatedMovies.length > 0 && (
           <MediaRow
-            title="Filmes Mais Bem Avaliados"
+            title="Filmes Aclamados Pela Crítica"
             items={topRatedMovies}
             type="movie"
             seeAllLink="/filmes?filter=top_rated"
@@ -102,7 +102,7 @@ const Home = () => {
         
         {upcomingMovies.length > 0 && (
           <MediaRow
-            title="Próximos Lançamentos"
+            title="Próximos Lançamentos (Filmes)"
             items={upcomingMovies}
             type="movie"
             seeAllLink="/filmes?filter=upcoming"
@@ -113,7 +113,7 @@ const Home = () => {
 
         {popularTVShows.length > 0 && (
           <MediaRow
-            title="Séries Populares"
+            title="Séries que Todo Mundo Está Assistindo"
             items={popularTVShows}
             type="tv"
             seeAllLink="/series"
@@ -122,7 +122,7 @@ const Home = () => {
         
         {topRatedTVShows.length > 0 && (
           <MediaRow
-            title="Séries Mais Bem Avaliadas"
+            title="Séries Mais Aclamadas"
             items={topRatedTVShows}
             type="tv"
             seeAllLink="/series?filter=top_rated"
