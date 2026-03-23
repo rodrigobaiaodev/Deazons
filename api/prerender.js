@@ -56,10 +56,6 @@ export default async function handler(req, res) {
   const parsedUrl = new URL(req.url, 'https://deazons.com');
   const url = parsedUrl.searchParams.get('url') || req.url || '/';
 
-  // Se não for bot, retorna 404 (o vercel.json vai servir index.html normalmente)
-  if (!isBot(userAgent)) {
-    return res.status(404).end();
-  }
 
   const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
   const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
@@ -129,7 +125,7 @@ export default async function handler(req, res) {
       const movie = await tmdbRes.json();
       
       if (movie && movie.title) {
-        const canonicalUrl = `https://deazons.com${req.url}`;
+        const canonicalUrl = `https://deazons.com${url}`;
         const imageUrl = movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null;
         const year = movie.release_date ? new Date(movie.release_date).getFullYear() : '';
         const title = `${movie.title}${year ? ` (${year})` : ''} | Deazons`;
@@ -182,7 +178,7 @@ export default async function handler(req, res) {
       const tv = await tmdbRes.json();
       
       if (tv && tv.name) {
-        const canonicalUrl = `https://deazons.com${req.url}`;
+        const canonicalUrl = `https://deazons.com${url}`;
         const imageUrl = tv.backdrop_path ? `https://image.tmdb.org/t/p/w1280${tv.backdrop_path}` : null;
         const year = tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : '';
         const title = `${tv.name}${year ? ` (${year})` : ''} | Deazons`;

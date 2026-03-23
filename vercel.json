@@ -1,11 +1,7 @@
 {
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(noticias/[^/]+|filmes/[^/]+|series/[^/]+)",
+      "src": "/noticias/(?<slug>[^/]+)",
       "has": [
         {
           "type": "header",
@@ -13,7 +9,29 @@
           "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
         }
       ],
-      "dest": "/api/prerender?url=/$1"
+      "dest": "/api/prerender?url=/noticias/$slug"
+    },
+    {
+      "src": "/filmes/(?<slug>[^/]+)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
+        }
+      ],
+      "dest": "/api/prerender?url=/filmes/$slug"
+    },
+    {
+      "src": "/series/(?<slug>[^/]+)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
+        }
+      ],
+      "dest": "/api/prerender?url=/series/$slug"
     },
     {
       "handle": "filesystem"
