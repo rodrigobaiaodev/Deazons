@@ -4,6 +4,7 @@ import { tmdbAPI, Movie, TVShow } from "@/services/tmdb";
 import HeroBanner from "@/components/HeroBanner";
 import MediaRow from "@/components/MediaRow";
 import LatestTrailers from "@/components/LatestTrailers";
+import HomeNewsSection from "@/components/HomeNewsSection";
 import { useToast } from "@/components/ui/use-toast";
 
 const Home = () => {
@@ -110,6 +111,8 @@ const Home = () => {
         )}
 
         <LatestTrailers />
+
+        <HomeNewsSection />
 
         {popularTVShows.length > 0 && (
           <MediaRow
