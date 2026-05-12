@@ -3,18 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deazons | Filmes e Séries</title>
-    <meta name="description" content="Descubra informações sobre milhares de filmes, séries e atores no Deazons - seu portal completo de entretenimento." />
+    <title>Deazons | Filmes, Séries e Notícias de Entretenimento</title>
+    <meta name="description" content="Descubra informações sobre milhares de filmes, séries e atores no Deazons - seu portal completo de entretenimento com notícias, trailers e onde assistir." />
     <meta name="author" content="Deazons" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="keywords" content="filmes, séries, streaming, trailers, elenco, cinema, entretenimento, Netflix, Disney+, notícias" />
+    <link rel="canonical" href="https://deazons.com/" />
 
-    <meta property="og:title" content="Deazons | Filmes e Séries" />
-    <meta property="og:description" content="Descubra informações sobre milhares de filmes, séries e atores no Deazons - seu portal completo de entretenimento." />
+    <meta property="og:title" content="Deazons | Filmes, Séries e Notícias de Entretenimento" />
+    <meta property="og:description" content="Descubra informações sobre milhares de filmes, séries e atores no Deazons - seu portal completo de entretenimento com notícias, trailers e onde assistir." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://deazons.com/" />
+    <meta property="og:site_name" content="Deazons" />
+    <meta property="og:image" content="https://deazons.com/deazons-logo.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="pt_BR" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@deazons" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="Deazons | Filmes, Séries e Notícias" />
+    <meta name="twitter:description" content="Descubra informações sobre milhares de filmes, séries e atores no Deazons." />
+    <meta name="twitter:image" content="https://deazons.com/deazons-logo.png" />
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/favicon.png" />
@@ -39,10 +49,31 @@
       gtag('config', 'G-KSCKH5X0P6');
     </script>
     
-    <!-- Additional required scripts -->
-    <script charset="UTF-8" src="https://cdn.sendwebpush.com/sendwebpush/client_services/67ffc45ad8867.js" async></script>
-    <link rel="preload" as="script" href="https://live.demand.supply/up.js"><script async data-cfasync="false" type="text/javascript" src="https://live.demand.supply/up.js"></script>
+    <!-- Bing Webmaster Tools -->
     <meta name="msvalidate.01" content="F16D5B4F632BF98B3BBB408FB7E6B6BB" />
+
+    <!-- Web Push Notifications -->
+    <script charset="UTF-8" src="https://cdn.sendwebpush.com/sendwebpush/client_services/67ffc45ad8867.js" async></script>
+
+    <!-- Schema.org JSON-LD - Website -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Deazons",
+      "url": "https://deazons.com",
+      "description": "Portal completo de entretenimento com informações sobre filmes, séries e notícias do mundo do cinema.",
+      "inLanguage": "pt-BR",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://deazons.com/pesquisa?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
 
   <body>

@@ -34,6 +34,17 @@
       "dest": "/api/prerender?url=/series/$slug"
     },
     {
+      "src": "/pessoas/(?<id>[^/]+)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
+        }
+      ],
+      "dest": "/api/prerender?url=/pessoas/$id"
+    },
+    {
       "handle": "filesystem"
     },
     {

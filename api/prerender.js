@@ -223,6 +223,57 @@ export default async function handler(req, res) {
       }
     }
 
+    // Pessoa/Ator: /pessoas/[id]
+    const personMatch = url.match(/^\/pessoas\/(\d+)/);
+    if (personMatch) {
+      const personId = personMatch[1];
+      const tmdbRes = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${TMDB_KEY}&language=pt-BR`);
+      const person = await tmdbRes.json();
+      
+      if (person && person.name) {
+        const canonicalUrl = `https://deazons.com${url}`;
+        const imageUrl = person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : null;
+        const title = `${person.name} | Ator/Atriz | Deazons`;
+        const description = person.biography 
+          ? person.biography.substring(0, 160) + '...' 
+          : `Veja a filmografia completa, fotos e informações sobre ${person.name} no Deazons.`;
+
+        const jsonLd = JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Person",
+          "name": person.name,
+          "description": description,
+          "image": imageUrl,
+          "birthDate": person.birthday,
+          "birthPlace": person.place_of_birth,
+          "url": canonicalUrl,
+          "sameAs": person.homepage ? [person.homepage] : []
+        });
+
+        const html = buildHTML({
+          title,
+          description,
+          imageUrl,
+          canonicalUrl,
+          jsonLd,
+          bodyContent: `
+            <article>
+              <h1>${escapeHtml(person.name)}</h1>
+              ${person.known_for_department ? `<p><strong>Área:</strong> ${escapeHtml(person.known_for_department)}</p>` : ''}
+              ${person.birthday ? `<p><strong>Nascimento:</strong> ${escapeHtml(person.birthday)}</p>` : ''}
+              ${person.place_of_birth ? `<p><strong>Local:</strong> ${escapeHtml(person.place_of_birth)}</p>` : ''}
+              <p>${escapeHtml(description)}</p>
+              <p><a href="${canonicalUrl}">Ver filmografia completa no Deazons</a></p>
+            </article>
+          `
+        });
+
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
+        return res.status(200).send(html);
+      }
+    }
+
     // Fallback — bot acessou rota sem dados específicos
     return res.status(404).end();
 

@@ -1,4 +1,11 @@
-
 User-agent: *
 Allow: /
+
+# Não indexar rotas sem valor de SEO
+Disallow: /pesquisa
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemaps
+Sitemap: https://deazons.com/sitemap.xml
 Sitemap: https://deazons.com/sitemap-index.xml
