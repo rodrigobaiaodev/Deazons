@@ -9,45 +9,40 @@ if (!apiKey) {
 export const genAI = new GoogleGenerativeAI(apiKey);
 
 export const geminiModel = genAI.getGenerativeModel({
-  model: 'gemini-2.5-flash',
+  model: 'gemini-2.0-flash',
   generationConfig: {
-    temperature: 0.7,
+    temperature: 0.75,
+    maxOutputTokens: 4096,
   },
 });
 
 export const rewriteArticlePrompt = (
   title: string, 
-  content: string, 
+  content: string,
   imageUrl?: string | null,
-  extraImageUrl1?: string | null,
-  extraImageUrl2?: string | null
-) => `
-Você é um redator sênior de um portal de cultura nerd e entretenimento chamado "Deazons".
-Eu fornecerei o título e conteúdo originais de um artigo de notícias sobre filmes/séries.
+  // Parâmetros mantidos para compatibilidade mas não usados mais
+  _extraImageUrl1?: string | null,
+  _extraImageUrl2?: string | null
+) => `Você é um redator sênior do portal de entretenimento "Deazons" (Brasil).
+Reescreva o artigo abaixo em português brasileiro de forma 100% original, autoritativa e otimizada para SEO e AdSense.
 
-Você deve REESCREVER completamente tudo em português brasileiro para ser **100% original**, otimizado para SEO e não parecer uma cópia. Siga estritamente os REQUISITOS abaixo:
+REGRAS OBRIGATÓRIAS:
+1. Mínimo de 900 palavras. Expanda com contexto histórico, curiosidades, impacto cultural, bilheteria e perspectivas futuras.
+2. Tom envolvente, opinativo e "nerd" profissional.
+3. Exatamente 4 subtítulos <h2> com palavras-chave relevantes para SEO.
+4. NÃO mencione o site de origem do conteúdo.
+5. NÃO inclua nenhuma tag <img> no conteúdo — a imagem de capa é inserida automaticamente pelo sistema.
+6. NÃO inclua o <h1> no campo "content" — ele é renderizado separadamente pelo frontend.
+7. O campo "content" deve conter apenas: parágrafos <p>, subtítulos <h2>, e listas <ul>/<li> quando apropriado.
 
-REQUISITOS AD-SENSE & SEO:
-1. **Mínimo absoluto de 800 palavras**. Se o conteúdo original for curto, expanda significativamente com contexto histórico, filmografia, curiosidades de bastidores, impacto financeiro (bilheteria) e teorias sobre o futuro da franquia. O artigo deve ser exaustivo e autoritativo.
-2. Seja engajador, opinativo e use um tom "nerd" e profissional.
-3. **Pelo menos 4 "H2"** com subtítulos amigáveis.
-4. **JAMAIS mencione o site de origem do conteúdo**.
-
-REGRA DE IMAGENS E POSICIONAMENTO:
-- Use a imagem principal (${imageUrl}) logo após o título H1.
-- OBRIGATORIAMENTE, insira uma imagem adicional (${extraImageUrl1 || imageUrl}) logo após o primeiro subtítulo <h2>.
-- OBRIGATORIAMENTE, insira uma imagem adicional (${extraImageUrl2 || imageUrl}) logo após o terceiro subtítulo <h2>.
-- Todas as tags <img> devem ter o estilo: style="width:100%;max-width:800px;margin:20px 0;border-radius:12px;"
-
-FORMATO DE RETORNO (JSON):
-Gere APENAS O JSON (sem marcadores de markdown) contendo:
+FORMATO DE RETORNO — responda APENAS com JSON válido (sem blocos de código markdown, sem \`\`\`):
 {
-  "title": "[O novo título H1, reescrito]",
-  "slug": "[O novo título em formato-kebab-case]",
-  "meta_description": "[Descrição de 150-160 caracteres]",
-  "tags": ["tag1", "tag2"],
-  "category": "[Marvel, Cinema, Séries, Dicas, Lançamentos]",
-  "content": "[O conteúdo HTML estruturado com H1, IMGs distribuídas, parágrafos e 4+ H2]"
+  "title": "Título reescrito, chamativo e com palavra-chave principal",
+  "slug": "titulo-em-kebab-case-sem-acentos",
+  "meta_description": "Descrição entre 150-160 caracteres com palavra-chave principal",
+  "tags": ["tag1", "tag2", "tag3"],
+  "category": "Uma de: Cinema, Séries, Marvel, DC, Lançamentos, Cultura Pop, Streaming, Anime",
+  "content": "<p>Introdução impactante...</p><h2>Subtítulo 1 com palavra-chave</h2><p>Conteúdo...</p><h2>Subtítulo 2</h2><p>Conteúdo...</p><h2>Subtítulo 3</h2><p>Conteúdo...</p><h2>Conclusão e Perspectivas</h2><p>Fechamento...</p>"
 }
 
 -- 
@@ -55,5 +50,6 @@ NOTÍCIA ORIGINAL:
 Título: ${title}
 
 Conteúdo:
-${content}
+${content.substring(0, 3000)}
 `;
+

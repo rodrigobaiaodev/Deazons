@@ -4,6 +4,7 @@ import { geminiModel, rewriteArticlePrompt } from '@/lib/gemini';
 import { tmdbAPI } from './tmdb';
 
 const RSS2JSON_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const MAX_ARTICLES_PER_RUN = 10;
 
 export const getFeedsFromDB = async (): Promise<RssSource[]> => {
   const { data, error } = await supabaseAdmin
@@ -68,10 +69,30 @@ const extractImage = (item: any): string | null => {
   return null;
 };
 
-// Use TMDB as fallback and for extra images
-const getTMDBImages = async (title: string): Promise<{ main: string | null, extra1: string | null, extra2: string | null }> => {
-  const images = { main: null as string | null, extra1: null as string | null, extra2: null as string | null };
-  
+/** Remove TODAS as tags <img> e <figure> do HTML gerado pelo Gemini */
+const stripImagesFromContent = (html: string): string => {
+  return html
+    .replace(/<img[^>]*\/?>/gi, '')
+    .replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
+/** Gera slug seguro sem caracteres especiais */
+const safeSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .substring(0, 90);
+};
+
+// Use TMDB as fallback for cover image
+const getTMDBCoverImage = async (title: string): Promise<string | null> => {
   try {
     const searchTitle = title
       .replace(/Review|Crítica|Trailer|Teaser|Confirmado|Rumor|Entrevista/gi, '')
@@ -79,7 +100,7 @@ const getTMDBImages = async (title: string): Promise<{ main: string | null, extr
       .split('-')[0]
       .trim();
 
-    if (!searchTitle) return images;
+    if (!searchTitle) return null;
 
     const data = await tmdbAPI.searchMulti(searchTitle);
     const results = (data.results || []).filter(
@@ -88,30 +109,13 @@ const getTMDBImages = async (title: string): Promise<{ main: string | null, extr
 
     if (results.length > 0) {
       const first = results[0] as any;
-      if (first.backdrop_path) images.main = `https://image.tmdb.org/t/p/w1280${first.backdrop_path}`;
-      else if (first.poster_path) images.main = `https://image.tmdb.org/t/p/w780${first.poster_path}`;
-
-      // Extra images from the same or different results
-      const extraImages: string[] = [];
-      results.forEach((res: any) => {
-        if (res.backdrop_path) {
-          const url = `https://image.tmdb.org/t/p/w780${res.backdrop_path}`;
-          if (url !== images.main && !extraImages.includes(url)) extraImages.push(url);
-        }
-        if (res.poster_path) {
-          const url = `https://image.tmdb.org/t/p/w780${res.poster_path}`;
-          if (url !== images.main && !extraImages.includes(url)) extraImages.push(url);
-        }
-      });
-
-      if (extraImages.length > 0) images.extra1 = extraImages[0];
-      if (extraImages.length > 1) images.extra2 = extraImages[1];
+      if (first.backdrop_path) return `https://image.tmdb.org/t/p/w1280${first.backdrop_path}`;
+      if (first.poster_path) return `https://image.tmdb.org/t/p/w780${first.poster_path}`;
     }
-    
-    return images;
+    return null;
   } catch (error) {
     console.error('TMDB images error for title:', title, error);
-    return images;
+    return null;
   }
 };
 
@@ -126,12 +130,15 @@ export const fetchAndProcessFeeds = async (
     return;
   }
 
+  let articlesCreated = 0;
+
+  outer:
   for (const source of sources) {
     onProgress(`Lendo feed: ${source.name} (${source.url})...`);
 
     try {
       // Use rss2json proxy to avoid CORS errors in browser
-      const apiUrl = `${RSS2JSON_API}${encodeURIComponent(source.url)}`;
+      const apiUrl = `${RSS2JSON_API}${encodeURIComponent(source.url)}&count=30`;
       const response = await fetch(apiUrl);
       const data = await response.json();
 
@@ -150,6 +157,7 @@ export const fetchAndProcessFeeds = async (
       onProgress(`Encontrados ${items.length} itens no feed ${source.name}. Processando novos...`);
 
       for (const item of items) {
+        if (articlesCreated >= MAX_ARTICLES_PER_RUN) break outer;
         if (!item.link || !item.title) continue;
 
         // Check duplicates
@@ -163,24 +171,22 @@ export const fetchAndProcessFeeds = async (
           continue;
         }
 
-        onProgress(`Processando: ${item.title.substring(0, 40)}...`);
+        onProgress(`Processando (${articlesCreated + 1}/${MAX_ARTICLES_PER_RUN}): ${item.title.substring(0, 40)}...`);
 
-        // Prepare content for Gemini
-        const rawContent = item.content || item.description || '';
-        
-        // Images - extract before prompt to send to Gemini
+        // Imagem de capa: RSS primeiro, depois TMDB
         let imageUrl = extractImage(item);
-        let extraImageUrl1 = null;
-        let extraImageUrl2 = null;
+        if (!imageUrl) {
+          onProgress(`Buscando imagem no TMDB para: ${item.title.substring(0, 30)}...`);
+          imageUrl = await getTMDBCoverImage(item.title);
+        }
+        // Fallback final
+        if (!imageUrl) {
+          imageUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1280&auto=format&fit=crop';
+        }
 
-        onProgress(`Buscando imagens no TMDB para: ${item.title.substring(0, 30)}...`);
-        const tmdbImages = await getTMDBImages(item.title);
-        
-        if (!imageUrl) imageUrl = tmdbImages.main;
-        extraImageUrl1 = tmdbImages.extra1;
-        extraImageUrl2 = tmdbImages.extra2;
-        
-        const prompt = rewriteArticlePrompt(item.title, rawContent, imageUrl, extraImageUrl1, extraImageUrl2);
+        // Prepare content for Gemini (sem passar extra images)
+        const rawContent = item.content || item.description || '';
+        const prompt = rewriteArticlePrompt(item.title, rawContent, imageUrl);
 
         try {
           // Gemini Call
@@ -192,23 +198,24 @@ export const fetchAndProcessFeeds = async (
 
           if (!articleData) {
             console.warn('Could not parse Gemini response for:', item.title);
-            console.log('--- GEMINI RAW RESPONSE --- \n', text, '\n---------------------------');
             onProgress(`❌ Falha ao processar texto da IA para: ${item.title.substring(0, 30)}`);
             continue;
           }
 
-          const altText = articleData.title || item.title;
+          // Limpar imagens do conteúdo (sem repetição)
+          const cleanContent = stripImagesFromContent(articleData.content || '');
+          const finalSlug = safeSlug(articleData.slug || articleData.title || item.title);
 
           // Merge into DB
           const newArticle = {
              title: articleData.title,
-             slug: articleData.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
-             content: articleData.content,
-             meta_description: articleData.meta_description,
+             slug: finalSlug,
+             content: cleanContent,
+             meta_description: (articleData.meta_description || '').substring(0, 160),
              status: 'published',
              published_at: new Date().toISOString(),
              image_url: imageUrl,
-             image_alt: altText,
+             image_alt: articleData.title || item.title,
              tags: articleData.tags || extractTags(item),
              category: articleData.category,
              source_url: item.link
@@ -222,7 +229,8 @@ export const fetchAndProcessFeeds = async (
              console.error('Error inserting article:', insertError);
              onProgress(`❌ Erro no banco ao salvar: ${articleData.title.substring(0, 30)} - ${insertError.message}`);
           } else {
-             onProgress(`✅ Salvo e Publicado com sucesso: ${articleData.title.substring(0, 30)}...`);
+             articlesCreated++;
+             onProgress(`✅ Salvo: "${articleData.title.substring(0, 50)}"...`);
           }
 
         } catch (geminiError: any) {
@@ -230,9 +238,9 @@ export const fetchAndProcessFeeds = async (
           onProgress(`❌ Erro da IA (Gemini): ${geminiError?.message || 'Desconhecido'}`);
         }
 
-        // Add 5-second delay to avoid rate limits on free tier (15 RPM)
-        onProgress('Aguardando 5 segundos para respeitar o limite da API gratuita...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        // Delay para respeitar rate limit Gemini (10 RPM free tier)
+        onProgress('Aguardando 7s para respeitar limite da API...');
+        await new Promise(resolve => setTimeout(resolve, 7000));
       }
     } catch (err: any) {
       console.error(`Error processing feed ${source.name}:`, err);
@@ -240,5 +248,5 @@ export const fetchAndProcessFeeds = async (
     }
   }
 
-  onProgress('Processamento finalizado!');
+  onProgress(`\n📊 Processamento finalizado! ${articlesCreated} artigos criados nesta execução.`);
 };
