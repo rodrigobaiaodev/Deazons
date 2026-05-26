@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
 import path from 'path';
-import fetch from 'node-fetch'; // Requires node version that supports fetch or npm install node-fetch
 
 const loadEnv = () => {
   try {
@@ -37,7 +36,63 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const genAI = new GoogleGenerativeAI(geminiKey);
 const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-const RSS2JSON_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const parseRssXml = (xmlStr) => {
+  const items = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+  let match;
+  
+  const getTag = (xmlStr, tag) => {
+    const regex = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
+    const m = xmlStr.match(regex);
+    return m ? m[1].trim() : null;
+  };
+
+  const getAttribute = (xmlStr, tag, attr) => {
+    const regex = new RegExp(`<${tag}[^>]+${attr}=["']([^"']+)["']`, 'i');
+    const m = xmlStr.match(regex);
+    return m ? m[1] : null;
+  };
+
+  while ((match = itemRegex.exec(xmlStr)) !== null) {
+    const itemXml = match[1];
+    const title = getTag(itemXml, 'title');
+    const link = getTag(itemXml, 'link');
+    const description = getTag(itemXml, 'description');
+    const content = getTag(itemXml, 'content:encoded');
+    const pubDate = getTag(itemXml, 'pubDate');
+    
+    const categories = [];
+    const categoryRegex = /<category><!\[CDATA\[([\s\S]*?)\]\]><\/category>|<category>([\s\S]*?)<\/category>/gi;
+    let catMatch;
+    while ((catMatch = categoryRegex.exec(itemXml)) !== null) {
+      categories.push((catMatch[1] || catMatch[2]).trim());
+    }
+    
+    let imageUrl = getAttribute(itemXml, 'media:content', 'url') || getAttribute(itemXml, 'enclosure', 'url');
+    if (!imageUrl && content) {
+      const imgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (imgMatch) imageUrl = imgMatch[1];
+    }
+    if (!imageUrl && description) {
+      const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (imgMatch) imageUrl = imgMatch[1];
+    }
+    
+    if (title && link) {
+      items.push({
+        title,
+        link,
+        description: content || description || '', 
+        content: content || description || '',
+        pubDate,
+        thumbnail: imageUrl,
+        enclosure: imageUrl ? { link: imageUrl } : null,
+        categories
+      });
+    }
+  }
+  return items;
+};
 
 const extractTags = (item) => {
   if (item.categories && Array.isArray(item.categories)) {
@@ -146,11 +201,15 @@ async function main() {
   for (const source of sources) {
     console.log(`Lendo feed: ${source.name}...`);
     try {
-      const response = await fetch(`${RSS2JSON_API}${encodeURIComponent(source.url)}`);
-      const data = await response.json();
-      if (data.status !== 'ok') continue;
+      const response = await fetch(source.url);
+      const xmlData = await response.text();
+      
+      const items = parseRssXml(xmlData);
+      if (items.length === 0) {
+          console.log(`Nenhum item encontrado no feed ${source.name}`);
+          continue;
+      }
 
-      const items = data.items || [];
       await supabase.from('rss_sources').update({ last_fetched: new Date().toISOString() }).eq('id', source.id);
 
       for (const item of items) {

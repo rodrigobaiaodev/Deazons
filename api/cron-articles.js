@@ -9,13 +9,69 @@
  * Variáveis de ambiente necessárias (já existentes):
  *   VITE_SUPABASE_URL
  *   VITE_SUPABASE_SERVICE_ROLE_KEY
- *   VITE_GEMINI_API_KEY
+ *   GROQ_API_KEY
  *   VITE_TMDB_API_KEY
  */
 
-const RSS2JSON_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const parseRssXml = (xmlStr) => {
+  const items = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+  let match;
+  
+  const getTag = (xmlStr, tag) => {
+    const regex = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
+    const m = xmlStr.match(regex);
+    return m ? m[1].trim() : null;
+  };
+
+  const getAttribute = (xmlStr, tag, attr) => {
+    const regex = new RegExp(`<${tag}[^>]+${attr}=["']([^"']+)["']`, 'i');
+    const m = xmlStr.match(regex);
+    return m ? m[1] : null;
+  };
+
+  while ((match = itemRegex.exec(xmlStr)) !== null) {
+    const itemXml = match[1];
+    const title = getTag(itemXml, 'title');
+    const link = getTag(itemXml, 'link');
+    const description = getTag(itemXml, 'description');
+    const content = getTag(itemXml, 'content:encoded');
+    const pubDate = getTag(itemXml, 'pubDate');
+    
+    const categories = [];
+    const categoryRegex = /<category><!\[CDATA\[([\s\S]*?)\]\]><\/category>|<category>([\s\S]*?)<\/category>/gi;
+    let catMatch;
+    while ((catMatch = categoryRegex.exec(itemXml)) !== null) {
+      categories.push((catMatch[1] || catMatch[2]).trim());
+    }
+    
+    let imageUrl = getAttribute(itemXml, 'media:content', 'url') || getAttribute(itemXml, 'enclosure', 'url');
+    if (!imageUrl && content) {
+      const imgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (imgMatch) imageUrl = imgMatch[1];
+    }
+    if (!imageUrl && description) {
+      const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (imgMatch) imageUrl = imgMatch[1];
+    }
+    
+    if (title && link) {
+      items.push({
+        title,
+        link,
+        description: content || description || '', 
+        content: content || description || '',
+        pubDate,
+        thumbnail: imageUrl,
+        enclosure: imageUrl ? { link: imageUrl } : null,
+        categories
+      });
+    }
+  }
+  return items;
+};
 const MAX_ARTICLES_PER_RUN = 10;
-const DELAY_BETWEEN_ARTICLES_MS = 6000; // 6s para respeitar rate limit Gemini Free (10 RPM)
+const DELAY_BETWEEN_ARTICLES_MS = 3000; // 3s para rate limit do Groq
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -56,7 +112,7 @@ async function getTMDBImage(title, tmdbKey) {
   } catch { return null; }
 }
 
-function parseGeminiResponse(text) {
+function parseAIResponse(text) {
   try {
     let clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
     try { return JSON.parse(clean); } catch (_) {}
@@ -75,7 +131,7 @@ function stripImagesFromContent(html) {
     .trim();
 }
 
-function buildGeminiPrompt(title, rawContent, imageUrl) {
+function buildAIPrompt(title, rawContent, imageUrl) {
   return `Você é um redator sênior do portal de entretenimento "Deazons" (Brasil).
 Reescreva o artigo abaixo em português brasileiro de forma 100% original, autoritativa e otimizada para SEO e AdSense.
 
@@ -190,25 +246,30 @@ ${urls}
 </urlset>`;
 }
 
-// ─── Gemini call ─────────────────────────────────────────────────────────────
+// ─── Groq call ─────────────────────────────────────────────────────────────
 
-async function callGemini(geminiKey, prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+async function callGroq(groqKey, prompt) {
+  const url = `https://api.groq.com/openai/v1/chat/completions`;
   const body = {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.75, maxOutputTokens: 4096 }
+    model: 'llama-3.3-70b-versatile',
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.75,
+    max_tokens: 4096
   };
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${groqKey}`
+    },
     body: JSON.stringify(body)
   });
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${err}`);
+    throw new Error(`Groq API error ${res.status}: ${err}`);
   }
   const data = await res.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return data?.choices?.[0]?.message?.content || '';
 }
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
@@ -226,10 +287,10 @@ export default async function handler(req, res) {
 
   const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
   const SERVICE_KEY  = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-  const GEMINI_KEY   = process.env.VITE_GEMINI_API_KEY;
+  const GROQ_KEY     = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   const TMDB_KEY     = process.env.VITE_TMDB_API_KEY;
 
-  if (!SUPABASE_URL || !SERVICE_KEY || !GEMINI_KEY) {
+  if (!SUPABASE_URL || !SERVICE_KEY || !GROQ_KEY) {
     return res.status(500).json({ error: 'Missing environment variables' });
   }
 
@@ -255,11 +316,13 @@ export default async function handler(req, res) {
 
       let items = [];
       try {
-        const apiUrl = `${RSS2JSON_API}${encodeURIComponent(source.url)}&count=30`;
-        const feedRes = await fetch(apiUrl, { signal: AbortSignal.timeout(15000) });
-        const feedData = await feedRes.json();
-        if (feedData.status !== 'ok') throw new Error(`rss2json status: ${feedData.status}`);
-        items = feedData.items || [];
+        const feedRes = await fetch(source.url, { signal: AbortSignal.timeout(15000) });
+        const xmlData = await feedRes.text();
+        items = parseRssXml(xmlData);
+        if (items.length === 0) {
+            log(`  ❌ Nenhum item encontrado no feed`);
+            continue;
+        }
         await updateSourceFetched(SUPABASE_URL, SERVICE_KEY, source.id);
         log(`  ↳ ${items.length} itens no feed`);
       } catch (err) {
@@ -289,18 +352,18 @@ export default async function handler(req, res) {
         }
 
         const rawContent = item.content || item.description || '';
-        const prompt = buildGeminiPrompt(item.title, rawContent, imageUrl);
+        const prompt = buildAIPrompt(item.title, rawContent, imageUrl);
 
         let articleData = null;
         try {
-          const geminiText = await callGemini(GEMINI_KEY, prompt);
-          articleData = parseGeminiResponse(geminiText);
+          const aiText = await callGroq(GROQ_KEY, prompt);
+          articleData = parseAIResponse(aiText);
           if (!articleData) {
-            log(`  ❌ Falha ao parsear resposta Gemini`);
+            log(`  ❌ Falha ao parsear resposta Groq`);
             continue;
           }
         } catch (err) {
-          log(`  ❌ Erro Gemini: ${err.message}`);
+          log(`  ❌ Erro Groq: ${err.message}`);
           // Aguarda mais tempo se for rate limit
           if (err.message.includes('429')) {
             log(`  ⏳ Rate limit — aguardando 30s...`);

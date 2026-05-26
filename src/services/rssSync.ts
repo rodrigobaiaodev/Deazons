@@ -1,9 +1,67 @@
  
 import { supabaseAdmin, RssSource, Article } from '@/lib/supabase';
-import { geminiModel, rewriteArticlePrompt } from '@/lib/gemini';
+import { groqClient, GROQ_MODEL, rewriteArticlePrompt } from '@/lib/groq';
 import { tmdbAPI } from './tmdb';
 
-const RSS2JSON_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const CORS_PROXY = 'https://corsproxy.io/?url=';
+
+const parseRssXml = (xmlStr: string) => {
+  const items: any[] = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+  let match;
+  
+  const getTag = (xmlStr: string, tag: string) => {
+    const regex = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
+    const m = xmlStr.match(regex);
+    return m ? m[1].trim() : null;
+  };
+
+  const getAttribute = (xmlStr: string, tag: string, attr: string) => {
+    const regex = new RegExp(`<${tag}[^>]+${attr}=["']([^"']+)["']`, 'i');
+    const m = xmlStr.match(regex);
+    return m ? m[1] : null;
+  };
+
+  while ((match = itemRegex.exec(xmlStr)) !== null) {
+    const itemXml = match[1];
+    const title = getTag(itemXml, 'title');
+    const link = getTag(itemXml, 'link');
+    const description = getTag(itemXml, 'description');
+    const content = getTag(itemXml, 'content:encoded');
+    const pubDate = getTag(itemXml, 'pubDate');
+    
+    const categories: string[] = [];
+    const categoryRegex = /<category><!\[CDATA\[([\s\S]*?)\]\]><\/category>|<category>([\s\S]*?)<\/category>/gi;
+    let catMatch;
+    while ((catMatch = categoryRegex.exec(itemXml)) !== null) {
+      categories.push((catMatch[1] || catMatch[2]).trim());
+    }
+    
+    let imageUrl = getAttribute(itemXml, 'media:content', 'url') || getAttribute(itemXml, 'enclosure', 'url');
+    if (!imageUrl && content) {
+      const imgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (imgMatch) imageUrl = imgMatch[1];
+    }
+    if (!imageUrl && description) {
+      const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (imgMatch) imageUrl = imgMatch[1];
+    }
+    
+    if (title && link) {
+      items.push({
+        title,
+        link,
+        description: content || description || '', 
+        content: content || description || '',
+        pubDate,
+        thumbnail: imageUrl,
+        enclosure: imageUrl ? { link: imageUrl } : null,
+        categories
+      });
+    }
+  }
+  return items;
+};
 const MAX_ARTICLES_PER_RUN = 10;
 
 export const getFeedsFromDB = async (): Promise<RssSource[]> => {
@@ -26,7 +84,7 @@ const extractTags = (item: any): string[] => {
   return [];
 };
 
-const parseGeminiResponse = (text: string) => {
+const parseAIResponse = (text: string) => {
   try {
     // 1. Limpeza básica: remover blocos de markdown ```json e ```
     let cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -43,7 +101,7 @@ const parseGeminiResponse = (text: string) => {
       throw new Error("Não foi possível encontrar um objeto JSON na resposta.");
     }
   } catch (err: any) {
-    console.error("Erro ao parsear resposta do Gemini:", err.message);
+    console.error("Erro ao parsear resposta da IA:", err.message);
     return null;
   }
 };
@@ -137,16 +195,16 @@ export const fetchAndProcessFeeds = async (
     onProgress(`Lendo feed: ${source.name} (${source.url})...`);
 
     try {
-      // Use rss2json proxy to avoid CORS errors in browser
-      const apiUrl = `${RSS2JSON_API}${encodeURIComponent(source.url)}&count=30`;
+      // Use corsproxy to avoid CORS errors in browser
+      const apiUrl = `${CORS_PROXY}${encodeURIComponent(source.url)}`;
       const response = await fetch(apiUrl);
-      const data = await response.json();
+      const xmlData = await response.text();
+      
+      const items = parseRssXml(xmlData);
 
-      if (data.status !== 'ok') {
-        throw new Error(`Status da API não é OK: ${JSON.stringify(data)}`);
+      if (items.length === 0) {
+        throw new Error(`Nenhum item encontrado na resposta XML.`);
       }
-
-      const items = data.items || [];
 
       // update last_fetched
       await supabaseAdmin
@@ -189,15 +247,19 @@ export const fetchAndProcessFeeds = async (
         const prompt = rewriteArticlePrompt(item.title, rawContent, imageUrl);
 
         try {
-          // Gemini Call
-          const result = await geminiModel.generateContent(prompt);
-          const response = await result.response;
-          const text = response.text();
+          // Groq Call
+          const result = await groqClient.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: GROQ_MODEL,
+            temperature: 0.75,
+            max_tokens: 4096,
+          });
+          const text = result.choices[0]?.message?.content || '';
 
-          const articleData = parseGeminiResponse(text);
+          const articleData = parseAIResponse(text);
 
           if (!articleData) {
-            console.warn('Could not parse Gemini response for:', item.title);
+            console.warn('Could not parse AI response for:', item.title);
             onProgress(`❌ Falha ao processar texto da IA para: ${item.title.substring(0, 30)}`);
             continue;
           }
@@ -233,12 +295,12 @@ export const fetchAndProcessFeeds = async (
              onProgress(`✅ Salvo: "${articleData.title.substring(0, 50)}"...`);
           }
 
-        } catch (geminiError: any) {
-          console.error('Error generating content with Gemini:', geminiError);
-          onProgress(`❌ Erro da IA (Gemini): ${geminiError?.message || 'Desconhecido'}`);
+        } catch (aiError: any) {
+          console.error('Error generating content with Groq:', aiError);
+          onProgress(`❌ Erro da IA (Groq): ${aiError?.message || 'Desconhecido'}`);
         }
 
-        // Delay para respeitar rate limit Gemini (10 RPM free tier)
+        // Delay para respeitar rate limit
         onProgress('Aguardando 7s para respeitar limite da API...');
         await new Promise(resolve => setTimeout(resolve, 7000));
       }
