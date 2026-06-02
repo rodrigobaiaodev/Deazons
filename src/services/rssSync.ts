@@ -4,9 +4,23 @@ import { tmdbAPI } from './tmdb';
 
 // Uses VITE_GROQ_API_KEY exposed to the browser; all calls go through the REST API
 // so the Node.js-only groq-sdk is never imported here.
+// NOTE: set VITE_GROQ_API_KEY in Vercel Environment Variables for the RSS admin panel to work.
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 
+if (!GROQ_API_KEY) {
+  console.warn(
+    '[rssSync] VITE_GROQ_API_KEY is not set. ' +
+    'RSS import via AI will fail. Add it to Vercel Environment Variables.'
+  );
+}
+
 async function callGroqRest(prompt: string): Promise<string> {
+  if (!GROQ_API_KEY) {
+    throw new Error(
+      'VITE_GROQ_API_KEY não está configurada. ' +
+      'Adicione essa variável nas Environment Variables do Vercel.'
+    );
+  }
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {

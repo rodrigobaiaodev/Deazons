@@ -12,9 +12,10 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
-    nodePolyfills(),
+    // Only needed in development (lovable-tagger) and for Node.js polyfills
+    // (no longer needed in production since groq-sdk was removed)
+    mode === 'development' && componentTagger(),
+    mode === 'development' && nodePolyfills(),
   ].filter(Boolean),
   resolve: {
     alias: {
