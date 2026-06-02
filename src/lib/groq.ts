@@ -1,21 +1,11 @@
-import Groq from 'groq-sdk';
-
-// Uses VITE_GROQ_API_KEY or GROQ_API_KEY
-const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY || '';
-
-if (!apiKey) {
-  console.warn('Groq API key is not defined in environment variables');
-}
-
-export const groqClient = new Groq({ 
-  apiKey, 
-  dangerouslyAllowBrowser: true 
-});
+// groq.ts — browser-safe helpers only.
+// The groq-sdk (Node.js only) must NEVER be imported here.
+// All server-side Groq calls live in api/cron-articles.js and scripts/auto-sync-rss.js.
 
 export const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 export const rewriteArticlePrompt = (
-  title: string, 
+  title: string,
   content: string,
   imageUrl?: string | null,
   // Parâmetros mantidos para compatibilidade mas não usados mais
@@ -50,4 +40,3 @@ Título: ${title}
 Conteúdo:
 ${content.substring(0, 3000)}
 `;
-

@@ -1,7 +1,32 @@
- 
 import { supabaseAdmin, RssSource, Article } from '@/lib/supabase';
-import { groqClient, GROQ_MODEL, rewriteArticlePrompt } from '@/lib/groq';
+import { GROQ_MODEL, rewriteArticlePrompt } from '@/lib/groq';
 import { tmdbAPI } from './tmdb';
+
+// Uses VITE_GROQ_API_KEY exposed to the browser; all calls go through the REST API
+// so the Node.js-only groq-sdk is never imported here.
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
+
+async function callGroqRest(prompt: string): Promise<string> {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.75,
+      max_tokens: 4096,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Groq API error ${res.status}: ${err}`);
+  }
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content || '';
+}
 
 const CORS_PROXY = 'https://corsproxy.io/?url=';
 
@@ -247,14 +272,8 @@ export const fetchAndProcessFeeds = async (
         const prompt = rewriteArticlePrompt(item.title, rawContent, imageUrl);
 
         try {
-          // Groq Call
-          const result = await groqClient.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: GROQ_MODEL,
-            temperature: 0.75,
-            max_tokens: 4096,
-          });
-          const text = result.choices[0]?.message?.content || '';
+          // Groq Call via REST (browser-safe — no groq-sdk)
+          const text = await callGroqRest(prompt);
 
           const articleData = parseAIResponse(text);
 
