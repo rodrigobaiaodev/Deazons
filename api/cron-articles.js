@@ -341,10 +341,13 @@ export default async function handler(req, res) {
         totalProcessed++;
         log(`  ✏️  Processando (${articlesCreated + 1}/${MAX_ARTICLES_PER_RUN}): ${item.title.substring(0, 50)}`);
 
-        // Imagem: RSS primeiro, depois TMDB como fallback
-        let imageUrl = extractImage(item);
-        if (!imageUrl && TMDB_KEY) {
+        // Imagem: TMDB primeiro, depois RSS como fallback
+        let imageUrl = null;
+        if (TMDB_KEY) {
           imageUrl = await getTMDBImage(item.title, TMDB_KEY);
+        }
+        if (!imageUrl) {
+          imageUrl = extractImage(item);
         }
         // Fallback final: imagem genérica de cinema
         if (!imageUrl) {
