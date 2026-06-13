@@ -1,11 +1,16 @@
 User-agent: *
 Allow: /
 
-# Não indexar rotas sem valor de SEO
-Disallow: /pesquisa
+# Bloquear rotas sem valor SEO
 Disallow: /admin/
 Disallow: /api/
+Disallow: /pesquisa
 
-# Sitemaps
+# Sitemaps — todos listados para o Googlebot
 Sitemap: https://deazons.com/sitemap.xml
 Sitemap: https://deazons.com/sitemap-index.xml
+Sitemap: https://deazons.com/sitemap-pages.xml
+Sitemap: https://deazons.com/sitemap-articles.xml
+Sitemap: https://deazons.com/sitemap-movies.xml
+Sitemap: https://deazons.com/sitemap-series.xml
+Sitemap: https://deazons.com/sitemap-people.xml

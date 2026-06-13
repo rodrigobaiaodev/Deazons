@@ -1,7 +1,8 @@
 /**
- * run-articles.js
- * Script local para rodar a geração de artigos manualmente,
- * replicando a lógica do api/cron-articles.js com as vars do .env.local
+ * run-articles.js  — v3 (estável, anti-rate-limit)
+ * 
+ * Busca feeds RSS ativos do Supabase, reescreve com Groq (llama-3.3-70b),
+ * injeta imagens do TMDB e salva no Supabase como artigos publicados.
  *
  * Uso: node run-articles.js
  */
@@ -12,310 +13,302 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// ── Carrega .env.local ──────────────────────────────────────────────────────
-const loadEnv = () => {
-  try {
-    const envPath = path.join(__dirname, '.env.local');
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, 'utf8');
-      content.split('\n').forEach(line => {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) return;
-        const idx = trimmed.indexOf('=');
-        if (idx < 0) return;
-        const key = trimmed.substring(0, idx).trim();
-        const val = trimmed.substring(idx + 1).trim().replace(/^["']|["']$/g, '');
-        if (key) process.env[key] = val;
-      });
-      console.log('✅ .env.local carregado');
-    }
-  } catch (e) {
-    console.error('Erro ao ler .env.local:', e.message);
-  }
-};
-
-loadEnv();
+// ── .env.local ────────────────────────────────────────────────────────────────
+const envPath = path.join(__dirname, '.env.local');
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
+    const i = line.indexOf('=');
+    if (i < 1) return;
+    const k = line.slice(0, i).trim();
+    const v = line.slice(i + 1).trim().replace(/^["']|["']$/g, '');
+    if (k && !process.env[k]) process.env[k] = v;
+  });
+  console.log('✅ .env.local carregado');
+}
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SERVICE_KEY  = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 const GROQ_KEY     = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
 const TMDB_KEY     = process.env.VITE_TMDB_API_KEY;
-const MAX_ARTICLES_PER_RUN = 10;
-const DELAY_BETWEEN_ARTICLES_MS = 4000;
 
 if (!SUPABASE_URL || !SERVICE_KEY || !GROQ_KEY) {
-  console.error('❌ Variáveis de ambiente faltando. Verifique .env.local');
+  console.error('❌ Faltam variáveis: VITE_SUPABASE_URL, VITE_SUPABASE_SERVICE_ROLE_KEY, GROQ_API_KEY');
   process.exit(1);
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+const MAX_PER_RUN   = 10;
+const DELAY_MS      = 8000;  // 8s entre artigos — respeita rate limit
+const BASE_DELAY_MS = 20000; // 20s de espera após rate limit
 
-const parseRssXml = (xmlStr) => {
+// ── RSS Parser simples ────────────────────────────────────────────────────────
+function parseRss(xml) {
   const items = [];
-  const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
-  let match;
-
-  const getTag = (xml, tag) => {
-    const rx = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
-    const m = xml.match(rx);
-    return m ? m[1].trim() : null;
-  };
-
-  const getAttribute = (xml, tag, attr) => {
-    const rx = new RegExp(`<${tag}[^>]+${attr}=["']([^"']+)["']`, 'i');
-    const m = xml.match(rx);
-    return m ? m[1] : null;
-  };
-
-  while ((match = itemRegex.exec(xmlStr)) !== null) {
-    const itemXml = match[1];
-    const title = getTag(itemXml, 'title');
-    const link = getTag(itemXml, 'link');
-    const description = getTag(itemXml, 'description');
-    const content = getTag(itemXml, 'content:encoded');
-    const pubDate = getTag(itemXml, 'pubDate');
-
-    const categories = [];
-    const catRx = /<category><!\[CDATA\[([\s\S]*?)\]\]><\/category>|<category>([\s\S]*?)<\/category>/gi;
-    let catMatch;
-    while ((catMatch = catRx.exec(itemXml)) !== null) {
-      categories.push((catMatch[1] || catMatch[2]).trim());
-    }
-
-    let imageUrl = getAttribute(itemXml, 'media:content', 'url') || getAttribute(itemXml, 'enclosure', 'url');
-    if (!imageUrl && content) {
-      const imgM = content.match(/<img[^>]+src=["']([^"']+)["']/i);
-      if (imgM) imageUrl = imgM[1];
-    }
-    if (!imageUrl && description) {
-      const imgM = description.match(/<img[^>]+src=["']([^"']+)["']/i);
-      if (imgM) imageUrl = imgM[1];
-    }
-
-    if (title && link) {
-      items.push({ title, link, description: content || description || '', content: content || description || '', pubDate, thumbnail: imageUrl, enclosure: imageUrl ? { link: imageUrl } : null, categories });
-    }
+  const itemRx = /<item>([\s\S]*?)<\/item>/gi;
+  let m;
+  while ((m = itemRx.exec(xml)) !== null) {
+    const block = m[1];
+    const get = (tag) => {
+      const r = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
+      const x = block.match(r);
+      return x ? x[1].trim() : '';
+    };
+    const getAttr = (tag, attr) => {
+      const r = new RegExp(`<${tag}[^>]+${attr}=["']([^"']+)["']`, 'i');
+      const x = block.match(r);
+      return x ? x[1] : '';
+    };
+    const title = get('title');
+    const link  = get('link');
+    if (!title || !link) continue;
+    const content = get('content:encoded') || get('description') || '';
+    let img = getAttr('media:content', 'url') || getAttr('enclosure', 'url');
+    if (!img) { const x = content.match(/<img[^>]+src=["']([^"']+)["']/i); if (x) img = x[1]; }
+    items.push({ title, link, content, img });
   }
   return items;
-};
-
-function slugify(text) {
-  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-').substring(0, 90);
 }
 
-function extractImage(item) {
-  if (item.enclosure?.link) return item.enclosure.link;
-  if (item.thumbnail) return item.thumbnail;
-  const content = item.content || item.description || '';
-  const m = content.match(/<img[^>]+src="([^">]+)"/);
-  return m ? m[1] : null;
+// ── Slug ──────────────────────────────────────────────────────────────────────
+function slugify(t) {
+  return (t || '')
+    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 -]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-')
+    .slice(0, 85);
 }
 
-async function getTMDBImage(title) {
+// ── HTML entities ─────────────────────────────────────────────────────────────
+function decodeHtml(s) {
+  return s
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n))
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&nbsp;/g, ' ');
+}
+
+// ── TMDB ──────────────────────────────────────────────────────────────────────
+async function getTMDB(title) {
+  if (!TMDB_KEY) return null;
   try {
-    const q = title.replace(/Review|Crítica|Trailer|Teaser|Confirmado|Rumor/gi, '').split(':')[0].trim();
-    if (!q) return null;
-    const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&language=pt-BR&query=${encodeURIComponent(q)}&page=1`);
-    const data = await res.json();
-    const results = (data.results || []).filter(r => r.media_type === 'movie' || r.media_type === 'tv');
-    if (!results.length) return null;
-    const first = results[0];
-    if (first.backdrop_path) return `https://image.tmdb.org/t/p/w1280${first.backdrop_path}`;
-    if (first.poster_path)  return `https://image.tmdb.org/t/p/w780${first.poster_path}`;
-    return null;
+    const q = title.replace(/review|crítica|trailer|teaser|\d+\s*(série|film)/gi, '').split(':')[0].trim();
+    if (q.length < 3) return null;
+    const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&language=pt-BR&query=${encodeURIComponent(q)}&page=1`);
+    const d = await r.json();
+    const res = (d.results || []).filter(x => x.media_type === 'movie' || x.media_type === 'tv');
+    if (!res.length) return null;
+    const f = res[0];
+    return {
+      main: f.backdrop_path  ? `https://image.tmdb.org/t/p/w1280${f.backdrop_path}` : f.poster_path ? `https://image.tmdb.org/t/p/w780${f.poster_path}` : null,
+      poster: f.poster_path  ? `https://image.tmdb.org/t/p/w780${f.poster_path}` : null,
+    };
   } catch { return null; }
 }
 
-function parseAIResponse(text) {
-  try {
-    let clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    try { return JSON.parse(clean); } catch (_) {}
-    const m = clean.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
-    return null;
-  } catch { return null; }
+// ── Supabase ──────────────────────────────────────────────────────────────────
+const SB_HEADERS = { 'Content-Type': 'application/json', apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, Prefer: 'return=minimal' };
+
+async function sbGet(path) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: SB_HEADERS });
+  return r.ok ? r.json() : [];
+}
+async function sbPost(path, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { method: 'POST', headers: SB_HEADERS, body: JSON.stringify(body) });
+  if (!r.ok) console.error('  SB error:', (await r.text()).slice(0, 120));
+  return r.ok;
+}
+async function sbPatch(path, body) {
+  await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { method: 'PATCH', headers: SB_HEADERS, body: JSON.stringify(body) });
 }
 
-function stripImagesFromContent(html) {
-  return html.replace(/<img[^>]*>/gi, '').replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '').replace(/\n{3,}/g, '\n\n').trim();
-}
-
-function buildAIPrompt(title, rawContent) {
-  return `Você é um redator sênior do portal de entretenimento "Deazons" (Brasil).
-Reescreva o artigo abaixo em português brasileiro de forma 100% original, autoritativa e otimizada para SEO e AdSense.
-
-REGRAS OBRIGATÓRIAS:
-1. Mínimo de 900 palavras. Expanda com contexto histórico, curiosidades, impacto cultural e perspectivas.
-2. Tom envolvente, opinativo e "nerd" profissional.
-3. Exatamente 4 subtítulos <h2> com palavras-chave relevantes.
-4. NÃO mencione o site de origem.
-5. NÃO inclua nenhuma tag <img> no conteúdo — apenas texto e H2.
-6. NÃO inclua o <h1> no campo "content" (ele é renderizado separadamente).
-7. A imagem de capa será exibida automaticamente pelo sistema — não a coloque no conteúdo.
-
-FORMATO DE RETORNO — responda APENAS com JSON válido (sem markdown, sem \`\`\`):
-{
-  "title": "Título reescrito e chamativo",
-  "slug": "titulo-em-kebab-case",
-  "meta_description": "Descrição entre 150-160 caracteres para SEO",
-  "tags": ["tag1", "tag2", "tag3"],
-  "category": "Uma de: Cinema, Séries, Marvel, DC, Lançamentos, Cultura Pop, Streaming, Anime",
-  "content": "<p>Introdução...</p><h2>Subtítulo 1</h2><p>Texto...</p><h2>Subtítulo 2</h2><p>Texto...</p><h2>Subtítulo 3</h2><p>Texto...</p><h2>Subtítulo 4</h2><p>Conclusão...</p>"
-}
-
-NOTÍCIA ORIGINAL:
-Título: ${title}
-Conteúdo: ${rawContent.substring(0, 3000)}`;
-}
-
-// ── Supabase helpers ─────────────────────────────────────────────────────────
-
-function sbHeaders() {
-  return { 'Content-Type': 'application/json', apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, Prefer: 'return=minimal' };
-}
-
-async function sbFetch(url, opts = {}) {
-  return fetch(url, { ...opts, headers: { ...sbHeaders(), ...(opts.headers || {}) } });
-}
-
-async function getActiveSources() {
-  const res = await sbFetch(`${SUPABASE_URL}/rest/v1/rss_sources?active=eq.true&select=*`);
-  return res.ok ? await res.json() : [];
-}
-
-async function articleExists(sourceUrl) {
-  const res = await sbFetch(`${SUPABASE_URL}/rest/v1/articles?source_url=eq.${encodeURIComponent(sourceUrl)}&select=id&limit=1`);
-  if (!res.ok) return false;
-  const data = await res.json();
-  return data.length > 0;
-}
-
-async function insertArticle(article) {
-  const res = await sbFetch(`${SUPABASE_URL}/rest/v1/articles`, { method: 'POST', body: JSON.stringify(article) });
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('  Supabase error:', err);
-  }
-  return res.ok;
-}
-
-async function updateSourceFetched(id) {
-  await sbFetch(`${SUPABASE_URL}/rest/v1/rss_sources?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ last_fetched: new Date().toISOString() }) });
-}
-
-// ── Groq ─────────────────────────────────────────────────────────────────────
-
+// ── Groq ──────────────────────────────────────────────────────────────────────
 async function callGroq(prompt) {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
-    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.75, max_tokens: 4096 })
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Groq API error ${res.status}: ${err}`);
-  }
-  const data = await res.json();
-  return data?.choices?.[0]?.message?.content || '';
-}
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 6000,
+      }),
+    });
 
-// ── Main ─────────────────────────────────────────────────────────────────────
-
-async function main() {
-  console.log(`\n🚀 Iniciando geração de artigos — ${new Date().toLocaleString('pt-BR')}`);
-  console.log(`   Máximo por rodada: ${MAX_ARTICLES_PER_RUN} artigos\n`);
-
-  const sources = await getActiveSources();
-  console.log(`📡 Fontes ativas: ${sources.length}`);
-  if (!sources.length) { console.log('Nenhuma fonte ativa. Encerrando.'); return; }
-
-  let articlesCreated = 0;
-
-  outerLoop:
-  for (const source of sources) {
-    console.log(`\n📰 Feed: ${source.name} (${source.url})`);
-
-    let items = [];
-    try {
-      const feedRes = await fetch(source.url, { signal: AbortSignal.timeout(15000) });
-      if (!feedRes.ok) { console.log(`  ❌ HTTP ${feedRes.status}`); continue; }
-      const xmlData = await feedRes.text();
-      items = parseRssXml(xmlData);
-      if (!items.length) { console.log('  ❌ Nenhum item no feed'); continue; }
-      await updateSourceFetched(source.id);
-      console.log(`  ↳ ${items.length} itens encontrados`);
-    } catch (err) {
-      console.log(`  ❌ Erro lendo feed: ${err.message}`);
-      continue;
+    if (r.ok) {
+      const d = await r.json();
+      return d?.choices?.[0]?.message?.content || '';
     }
 
+    const err = await r.text();
+    if (r.status === 429) {
+      const secs = (err.match(/try again in ([\d.]+)s/) || [])[1];
+      const wait = Math.ceil(parseFloat(secs || '30')) + 10;
+      console.log(`  ⏳ Rate limit — aguardando ${wait}s... (tentativa ${attempt}/3)`);
+      await sleep(wait * 1000);
+      continue;
+    }
+    throw new Error(`Groq ${r.status}: ${err.slice(0, 150)}`);
+  }
+  throw new Error('Groq: rate limit persistente após 3 tentativas');
+}
+
+// ── Parse JSON da resposta do Groq ────────────────────────────────────────────
+function parseJSON(text) {
+  // Tenta extrair JSON mesmo que haja texto antes/depois ou markdown
+  const clean = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  
+  // Tentativa 1: parse direto
+  try { return JSON.parse(clean); } catch (_) {}
+  
+  // Tentativa 2: acha o primeiro { e o último } balanceado
+  let start = clean.indexOf('{');
+  if (start === -1) return null;
+  
+  let depth = 0, end = -1;
+  for (let i = start; i < clean.length; i++) {
+    if (clean[i] === '{') depth++;
+    else if (clean[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+  }
+  
+  if (end === -1) return null;
+  try { return JSON.parse(clean.slice(start, end + 1)); } catch (_) { return null; }
+}
+
+// ── Prompt compacto (menos tokens = menos rate limit) ────────────────────────
+function buildPrompt(title, rawContent) {
+  // Limita o conteúdo do feed a 2000 chars para economizar tokens
+  const content = rawContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000);
+
+  return `Você é redator do portal brasileiro "Deazons" (cinema, séries, cultura pop).
+Reescreva este artigo em PT-BR. Retorne APENAS JSON puro sem markdown.
+
+REGRAS:
+- Mínimo 1200 palavras no campo "content"
+- 5 subtítulos <h2>
+- 1 <blockquote> com citação impactante
+- 1 <ul> com 4-5 bullet points de curiosidades
+- NÃO use tags <img> no content
+- NÃO mencione a fonte original
+- Tom jornalístico e envolvente
+
+JSON de retorno (sem \`\`\`):
+{"title":"título chamativo","slug":"slug-kebab","meta_description":"150-160 chars SEO","tags":["t1","t2","t3"],"category":"Cinema|Séries|Marvel|DC|Streaming|Anime|Cultura Pop","content":"<p>intro</p><h2>...</h2>..."}
+
+NOTÍCIA:
+Título: ${title}
+Conteúdo: ${content}`;
+}
+
+// ── Injeta imagens no HTML ────────────────────────────────────────────────────
+function injectImages(html, mainImg, posterImg, alt) {
+  // Remove imgs existentes
+  let c = html.replace(/<img[^>]*>/gi, '').replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '').trim();
+
+  // Capa no topo
+  const cover = `<figure style="margin:0 0 2rem">
+  <img src="${mainImg}" alt="${alt}" style="width:100%;border-radius:12px" />
+</figure>`;
+
+  // Poster no meio (após 3º h2 se disponível)
+  if (posterImg && posterImg !== mainImg) {
+    let cnt = 0;
+    c = c.replace(/<h2/gi, m => { cnt++; return cnt === 3 ? `<figure style="margin:2rem 0"><img src="${posterImg}" alt="${alt}" style="width:100%;border-radius:12px"/></figure>\n${m}` : m; });
+  }
+
+  return cover + '\n' + c;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function wordCount(html) {
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).length;
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+async function main() {
+  console.log(`\n🚀 Deazons — Geração de Artigos v3`);
+  console.log(`   ${new Date().toLocaleString('pt-BR')} | Max: ${MAX_PER_RUN} artigos\n`);
+
+  const sources = await sbGet('rss_sources?active=eq.true&select=*');
+  console.log(`📡 Feeds ativos: ${sources.length}`);
+  if (!sources.length) return console.log('Nenhum feed ativo.');
+
+  let created = 0;
+
+  outer:
+  for (const src of sources) {
+    console.log(`\n📰 ${src.name}`);
+    let items;
+    try {
+      const res = await fetch(src.url, { signal: AbortSignal.timeout(12000) });
+      if (!res.ok) { console.log(`  ❌ HTTP ${res.status}`); continue; }
+      items = parseRss(await res.text());
+      console.log(`  ↳ ${items.length} itens`);
+      await sbPatch(`rss_sources?id=eq.${src.id}`, { last_fetched: new Date().toISOString() });
+    } catch (e) { console.log(`  ❌ ${e.message}`); continue; }
+
     for (const item of items) {
-      if (articlesCreated >= MAX_ARTICLES_PER_RUN) break outerLoop;
-      if (!item.link || !item.title) continue;
+      if (created >= MAX_PER_RUN) break outer;
 
-      const exists = await articleExists(item.link);
-      if (exists) { process.stdout.write('.'); continue; }
+      // Checa duplicata
+      const exists = await sbGet(`articles?source_url=eq.${encodeURIComponent(item.link)}&select=id&limit=1`);
+      if (exists.length) { process.stdout.write('.'); continue; }
 
-      console.log(`\n  ✏️  [${articlesCreated + 1}/${MAX_ARTICLES_PER_RUN}] ${item.title.substring(0, 60)}`);
+      const title = decodeHtml(item.title);
+      console.log(`\n  [${created + 1}/${MAX_PER_RUN}] ${title.slice(0, 65)}`);
 
       // Imagem
-      let imageUrl = null;
-      if (TMDB_KEY) imageUrl = await getTMDBImage(item.title);
-      if (!imageUrl) imageUrl = extractImage(item);
-      if (!imageUrl) imageUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1280&auto=format&fit=crop';
+      const tmdb = await getTMDB(title);
+      const mainImg   = tmdb?.main   || item.img || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1280&auto=format&fit=crop';
+      const posterImg = tmdb?.poster || null;
 
-      const prompt = buildAIPrompt(item.title, item.content || item.description || '');
-
-      let articleData = null;
+      // Groq
+      let data;
       try {
-        const aiText = await callGroq(prompt);
-        articleData = parseAIResponse(aiText);
-        if (!articleData) { console.log('  ❌ Falha ao parsear resposta Groq'); continue; }
-      } catch (err) {
-        console.log(`  ❌ Erro Groq: ${err.message}`);
-        if (err.message.includes('429')) {
-          console.log('  ⏳ Rate limit — aguardando 30s...');
-          await new Promise(r => setTimeout(r, 30000));
+        console.log('  🤖 Gerando...');
+        const raw = await callGroq(buildPrompt(title, item.content));
+        data = parseJSON(raw);
+        if (!data?.content) {
+          console.log('  ❌ JSON inválido — pulando');
+          console.log('  Preview:', raw.slice(0, 200));
+          continue;
         }
+      } catch (e) {
+        console.log(`  ❌ ${e.message}`);
         continue;
       }
 
-      const cleanContent = stripImagesFromContent(articleData.content || '');
-      const finalSlug = slugify(articleData.slug || articleData.title || item.title);
+      const wc = wordCount(data.content);
+      console.log(`  📝 ${wc} palavras`);
 
-      const newArticle = {
-        title: articleData.title || item.title,
-        slug: finalSlug,
-        content: cleanContent,
-        meta_description: (articleData.meta_description || '').substring(0, 160),
-        status: 'published',
-        published_at: new Date().toISOString(),
-        image_url: imageUrl,
-        image_alt: articleData.title || item.title,
-        tags: articleData.tags || [],
-        category: articleData.category || 'Cinema',
-        source_url: item.link,
-      };
+      const content = injectImages(data.content, mainImg, posterImg, data.title || title);
+      const slug    = slugify(data.slug || data.title || title);
 
-      const saved = await insertArticle(newArticle);
-      if (saved) {
-        articlesCreated++;
-        console.log(`  ✅ Salvo: "${newArticle.title.substring(0, 60)}"`);
-      } else {
-        console.log('  ❌ Erro ao salvar no Supabase');
+      const ok = await sbPost('articles', {
+        title:            (data.title || title).slice(0, 200),
+        slug,
+        content,
+        meta_description: (data.meta_description || '').slice(0, 160),
+        status:           'published',
+        published_at:     new Date().toISOString(),
+        image_url:        mainImg,
+        image_alt:        (data.title || title).slice(0, 200),
+        tags:             data.tags || [],
+        category:         data.category || 'Cinema',
+        source_url:       item.link,
+      });
+
+      if (ok) {
+        created++;
+        console.log(`  ✅ Salvo: "${(data.title || title).slice(0, 60)}"`);
       }
 
-      if (articlesCreated < MAX_ARTICLES_PER_RUN) {
-        console.log(`  ⏳ Aguardando ${DELAY_BETWEEN_ARTICLES_MS / 1000}s (rate limit)...`);
-        await new Promise(r => setTimeout(r, DELAY_BETWEEN_ARTICLES_MS));
+      if (created < MAX_PER_RUN) {
+        console.log(`  ⏳ ${DELAY_MS / 1000}s...`);
+        await sleep(DELAY_MS);
       }
     }
   }
 
-  console.log(`\n✨ Concluído! ${articlesCreated} artigos criados nesta rodada.\n`);
+  console.log(`\n✨ ${created} artigos criados.\n`);
 }
 
-main().catch(err => {
-  console.error('💥 Erro fatal:', err);
-  process.exit(1);
-});
+main().catch(e => { console.error('💥', e.message); process.exit(1); });
