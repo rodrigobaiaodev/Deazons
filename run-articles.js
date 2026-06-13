@@ -1,8 +1,9 @@
 /**
- * run-articles.js  — v3 (estável, anti-rate-limit)
+ * run-articles.js  — v4 (AdSense Ready, Alta Qualidade)
  * 
- * Busca feeds RSS ativos do Supabase, reescreve com Groq (llama-3.3-70b),
- * injeta imagens do TMDB e salva no Supabase como artigos publicados.
+ * Busca feeds RSS ativos do Supabase, reescreve com Groq (llama-3.3-70b)
+ * gerando artigos MASSIVOS (1500+ palavras), originais e otimizados para SEO.
+ * Injeta imagens do TMDB e salva no Supabase.
  *
  * Uso: node run-articles.js
  */
@@ -23,7 +24,6 @@ if (fs.existsSync(envPath)) {
     const v = line.slice(i + 1).trim().replace(/^["']|["']$/g, '');
     if (k && !process.env[k]) process.env[k] = v;
   });
-  console.log('✅ .env.local carregado');
 }
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -36,11 +36,10 @@ if (!SUPABASE_URL || !SERVICE_KEY || !GROQ_KEY) {
   process.exit(1);
 }
 
-const MAX_PER_RUN   = 10;
-const DELAY_MS      = 8000;  // 8s entre artigos — respeita rate limit
-const BASE_DELAY_MS = 20000; // 20s de espera após rate limit
+const MAX_PER_RUN   = 5; // Reduzido para 5 para focar em artigos maiores
+const DELAY_MS      = 12000; 
 
-// ── RSS Parser simples ────────────────────────────────────────────────────────
+// ── RSS Parser ────────────────────────────────────────────────────────────────
 function parseRss(xml) {
   const items = [];
   const itemRx = /<item>([\s\S]*?)<\/item>/gi;
@@ -61,25 +60,28 @@ function parseRss(xml) {
     const link  = get('link');
     if (!title || !link) continue;
     const content = get('content:encoded') || get('description') || '';
+    
     let img = getAttr('media:content', 'url') || getAttr('enclosure', 'url');
     if (!img) { const x = content.match(/<img[^>]+src=["']([^"']+)["']/i); if (x) img = x[1]; }
+    
+    // Ignorar iframes ou vídeos (YouTube etc)
+    if (img && (img.includes('youtube') || img.includes('embed') || img.includes('iframe'))) {
+      img = null;
+    }
+    
     items.push({ title, link, content, img });
   }
   return items;
 }
 
-// ── Slug ──────────────────────────────────────────────────────────────────────
+// ── Utils ──────────────────────────────────────────────────────────────────────
 function slugify(t) {
-  return (t || '')
-    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9 -]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-')
-    .slice(0, 85);
+  return (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 -]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 85);
 }
 
-// ── HTML entities ─────────────────────────────────────────────────────────────
 function decodeHtml(s) {
-  return s
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n))
+  return s.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n))
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&nbsp;/g, ' ');
 }
@@ -127,8 +129,8 @@ async function callGroq(prompt) {
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 6000,
+        temperature: 0.8, // Mais criatividade
+        max_tokens: 6500,
       }),
     });
 
@@ -150,85 +152,92 @@ async function callGroq(prompt) {
   throw new Error('Groq: rate limit persistente após 3 tentativas');
 }
 
-// ── Parse JSON da resposta do Groq ────────────────────────────────────────────
+// ── Parser JSON Seguro ────────────────────────────────────────────────────────
 function parseJSON(text) {
-  // Tenta extrair JSON mesmo que haja texto antes/depois ou markdown
   const clean = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-  
-  // Tentativa 1: parse direto
   try { return JSON.parse(clean); } catch (_) {}
   
-  // Tentativa 2: acha o primeiro { e o último } balanceado
   let start = clean.indexOf('{');
   if (start === -1) return null;
-  
   let depth = 0, end = -1;
   for (let i = start; i < clean.length; i++) {
     if (clean[i] === '{') depth++;
     else if (clean[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
   }
-  
   if (end === -1) return null;
   try { return JSON.parse(clean.slice(start, end + 1)); } catch (_) { return null; }
 }
 
-// ── Prompt compacto (menos tokens = menos rate limit) ────────────────────────
+// ── Prompt Extenso e Detalhado ────────────────────────────────────────────────
 function buildPrompt(title, rawContent) {
-  // Limita o conteúdo do feed a 2000 chars para economizar tokens
-  const content = rawContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000);
+  const content = rawContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2500);
 
-  return `Você é redator do portal brasileiro "Deazons" (cinema, séries, cultura pop).
-Reescreva este artigo em PT-BR. Retorne APENAS JSON puro sem markdown.
+  return `Você é um redator sênior do portal brasileiro "Deazons" (especializado em cultura pop, cinema e séries). 
+Seu objetivo é escrever um artigo ÉPICO, PROFUNDO e EXTREMAMENTE ENVOLVENTE (aprovado para Google AdSense).
 
-REGRAS:
-- Mínimo 1200 palavras no campo "content"
-- 5 subtítulos <h2>
-- 1 <blockquote> com citação impactante
-- 1 <ul> com 4-5 bullet points de curiosidades
-- NÃO use tags <img> no content
-- NÃO mencione a fonte original
-- Tom jornalístico e envolvente
+A fonte original (veja abaixo) deve ser APENAS o ponto de partida. Você deve REESCREVER TOTALMENTE o texto, EXPANDINDO o assunto de forma autoral, detalhada, rica em contexto e análises críticas. NÃO traduza ou copie; seja criativo!
 
-JSON de retorno (sem \`\`\`):
-{"title":"título chamativo","slug":"slug-kebab","meta_description":"150-160 chars SEO","tags":["t1","t2","t3"],"category":"Cinema|Séries|Marvel|DC|Streaming|Anime|Cultura Pop","content":"<p>intro</p><h2>...</h2>..."}
+REGRAS OBRIGATÓRIAS DO ARTIGO:
+1. Tamanho: o artigo DEVE ter pelo menos 10 parágrafos extensos e profundos. É proibido gerar textos curtos ou resumos rasos.
+2. Estrutura rica: use pelo menos 5 subtítulos <h2> envolventes.
+3. Formatação: inclua pelo menos 1 <blockquote> (citação de personagem, crítica ou impacto cultural), 1 <ul> (lista de curiosidades ou pontos chave) e destaque partes importantes em <strong>.
+4. NUNCA coloque tags de imagem (<img>) no texto gerado.
+5. NUNCA mencione que a notícia veio de um site ou "fonte original". Haja como se o Deazons tivesse feito a análise primária.
+6. A linguagem deve ser de revista especializada, mantendo o usuário engajado do começo ao fim.
 
-NOTÍCIA:
-Título: ${title}
-Conteúdo: ${content}`;
+Retorne APENAS um JSON estrito, sem markdown, no formato:
+{
+  "title": "Crie um título novo, altamente chamativo (clickbait do bem), intrigante e com pegada SEO",
+  "slug": "crie-um-slug-em-minusculas-separado-por-hifen",
+  "meta_description": "Crie uma descrição intrigante e instigante de 150 caracteres para chamar o leitor do Google.",
+  "tags": ["3 a 5 tags focadas (ex: Filme X, Diretor Y, Netflix)"],
+  "category": "Escolha exatamente uma: Cinema OU Séries OU Cultura Pop",
+  "content": "<p>Seu primeiro parágrafo envolvente aqui...</p><h2>Subtítulo envolvente</h2><p>Restante do artigo profundo e expansivo...</p>"
 }
 
-// ── Injeta imagens no HTML ────────────────────────────────────────────────────
+Assunto Base para o seu artigo:
+Título: ${title}
+Rascunho de Informações: ${content}`;
+}
+
+// ── Injeção de Imagens ────────────────────────────────────────────────────────
 function injectImages(html, mainImg, posterImg, alt) {
-  // Remove imgs existentes
   let c = html.replace(/<img[^>]*>/gi, '').replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '').trim();
 
-  // Capa no topo
-  const cover = `<figure style="margin:0 0 2rem">
-  <img src="${mainImg}" alt="${alt}" style="width:100%;border-radius:12px" />
+  // Imagem de destaque logo após o primeiro parágrafo
+  const cover = `<figure style="margin: 0 0 2.5rem 0;">
+  <img src="${mainImg}" alt="${alt}" style="width:100%; border-radius:16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
 </figure>`;
 
-  // Poster no meio (após 3º h2 se disponível)
-  if (posterImg && posterImg !== mainImg) {
-    let cnt = 0;
-    c = c.replace(/<h2/gi, m => { cnt++; return cnt === 3 ? `<figure style="margin:2rem 0"><img src="${posterImg}" alt="${alt}" style="width:100%;border-radius:12px"/></figure>\n${m}` : m; });
+  // Achar o primeiro </p>
+  const firstP = c.indexOf('</p>');
+  if (firstP !== -1) {
+    c = c.substring(0, firstP + 4) + '\n' + cover + '\n' + c.substring(firstP + 4);
+  } else {
+    c = cover + '\n' + c;
   }
 
-  return cover + '\n' + c;
+  // Poster no meio (após o 3º h2 se disponível)
+  if (posterImg && posterImg !== mainImg) {
+    let cnt = 0;
+    c = c.replace(/<h2/gi, m => { 
+      cnt++; 
+      return cnt === 3 ? `<figure style="margin: 3rem 0;"><img src="${posterImg}" alt="${alt} Poster" style="width:100%; max-width: 500px; margin: 0 auto; display: block; border-radius:12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);"/></figure>\n${m}` : m; 
+    });
+  }
+
+  return c;
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function wordCount(html) {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).length;
-}
+function wordCount(html) { return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).length; }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log(`\n🚀 Deazons — Geração de Artigos v3`);
+  console.log(`\n🚀 Deazons — Geração de Artigos v4 (Alta Qualidade)`);
   console.log(`   ${new Date().toLocaleString('pt-BR')} | Max: ${MAX_PER_RUN} artigos\n`);
 
   const sources = await sbGet('rss_sources?active=eq.true&select=*');
-  console.log(`📡 Feeds ativos: ${sources.length}`);
   if (!sources.length) return console.log('Nenhum feed ativo.');
 
   let created = 0;
@@ -241,43 +250,42 @@ async function main() {
       const res = await fetch(src.url, { signal: AbortSignal.timeout(12000) });
       if (!res.ok) { console.log(`  ❌ HTTP ${res.status}`); continue; }
       items = parseRss(await res.text());
-      console.log(`  ↳ ${items.length} itens`);
+      console.log(`  ↳ ${items.length} itens encontrados`);
       await sbPatch(`rss_sources?id=eq.${src.id}`, { last_fetched: new Date().toISOString() });
     } catch (e) { console.log(`  ❌ ${e.message}`); continue; }
 
     for (const item of items) {
       if (created >= MAX_PER_RUN) break outer;
 
-      // Checa duplicata
+      const title = decodeHtml(item.title);
+      // Pula artigos que parecem vazios ou muito irrelevantes
+      if (!item.content || item.content.length < 50) continue;
+
       const exists = await sbGet(`articles?source_url=eq.${encodeURIComponent(item.link)}&select=id&limit=1`);
       if (exists.length) { process.stdout.write('.'); continue; }
 
-      const title = decodeHtml(item.title);
-      console.log(`\n  [${created + 1}/${MAX_PER_RUN}] ${title.slice(0, 65)}`);
+      console.log(`\n  [${created + 1}/${MAX_PER_RUN}] Em Análise: ${title.slice(0, 70)}`);
 
-      // Imagem
       const tmdb = await getTMDB(title);
       const mainImg   = tmdb?.main   || item.img || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1280&auto=format&fit=crop';
       const posterImg = tmdb?.poster || null;
 
-      // Groq
       let data;
       try {
-        console.log('  🤖 Gerando...');
+        console.log('  🤖 Gerando artigo extenso e autoral (Groq)...');
         const raw = await callGroq(buildPrompt(title, item.content));
         data = parseJSON(raw);
-        if (!data?.content) {
-          console.log('  ❌ JSON inválido — pulando');
-          console.log('  Preview:', raw.slice(0, 200));
+        if (!data?.content || data.content.length < 500) {
+          console.log('  ❌ Resposta muito curta ou JSON inválido.');
           continue;
         }
       } catch (e) {
-        console.log(`  ❌ ${e.message}`);
+        console.log(`  ❌ Erro Groq: ${e.message}`);
         continue;
       }
 
       const wc = wordCount(data.content);
-      console.log(`  📝 ${wc} palavras`);
+      console.log(`  📝 Qualidade: ${wc} palavras geradas`);
 
       const content = injectImages(data.content, mainImg, posterImg, data.title || title);
       const slug    = slugify(data.slug || data.title || title);
@@ -292,23 +300,23 @@ async function main() {
         image_url:        mainImg,
         image_alt:        (data.title || title).slice(0, 200),
         tags:             data.tags || [],
-        category:         data.category || 'Cinema',
+        category:         data.category || 'Cultura Pop',
         source_url:       item.link,
       });
 
       if (ok) {
         created++;
-        console.log(`  ✅ Salvo: "${(data.title || title).slice(0, 60)}"`);
+        console.log(`  ✅ PUBLICADO: "${(data.title || title).slice(0, 60)}"`);
       }
 
       if (created < MAX_PER_RUN) {
-        console.log(`  ⏳ ${DELAY_MS / 1000}s...`);
+        console.log(`  ⏳ Aguardando ${DELAY_MS / 1000}s para evitar rate limit...`);
         await sleep(DELAY_MS);
       }
     }
   }
 
-  console.log(`\n✨ ${created} artigos criados.\n`);
+  console.log(`\n✨ ${created} artigos de alta qualidade criados.\n`);
 }
 
 main().catch(e => { console.error('💥', e.message); process.exit(1); });

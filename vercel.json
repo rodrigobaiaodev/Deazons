@@ -101,6 +101,13 @@
       "handle": "filesystem"
     },
     {
+      "src": "/api/sitemap-articles",
+      "status": 308,
+      "headers": {
+        "Location": "/sitemap-articles.xml"
+      }
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
