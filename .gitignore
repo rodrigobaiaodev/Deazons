@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Arquivos temporários do Vite
+*.timestamp-*
+
+# Outputs de lint/eslint
+eslint_output.txt
+lint_output.txt
