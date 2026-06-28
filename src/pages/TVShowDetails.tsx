@@ -22,6 +22,7 @@ import WatchProviders from "@/components/WatchProviders";
 import { Play, Star, Calendar, Clock, Users, Layers } from "lucide-react";
 import NotFound from "./NotFound";
 import { extractId, tvPath } from "@/lib/slug";
+import SeoHead from "@/components/SeoHead";
 
 const TVShowDetails = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -58,25 +59,7 @@ const TVShowDetails = () => {
         setVideos(videosData.results);
         setSimilarShows(similarData.results);
 
-        // --- SEO & META TAGS ---
-        const pageUrl = `https://deazons.com${tvPath(showData.id, showData.name)}`;
-        const pageTitle = `${showData.name} (${new Date(showData.first_air_date).getFullYear()}) | Deazons`;
-        const pageDesc = showData.overview ? `${showData.overview.substring(0, 160)}...` : `Veja detalhes, episódios, elenco e onde assistir à série ${showData.name} no Deazons.`;
-        const pageImg = getImageUrl(showData.backdrop_path, BACKDROP_SIZES.ORIGINAL);
-
-        document.title = pageTitle;
-        updateMetaTag('description', pageDesc);
-        updateMetaTag('og:title', pageTitle);
-        updateMetaTag('og:description', pageDesc);
-        updateMetaTag('og:image', pageImg);
-        updateMetaTag('og:url', pageUrl);
-        updateMetaTag('og:type', 'video.tv_show');
-        updateMetaTag('twitter:title', pageTitle);
-        updateMetaTag('twitter:description', pageDesc);
-        updateMetaTag('twitter:image', pageImg);
-        updateCanonicalTag(pageUrl);
-
-        // Redirect to slug URL if needed
+        // Redirect to canonical slug URL if needed
         const expectedSlug = tvPath(showData.id, showData.name).replace("/series/", "");
         if (slug !== expectedSlug) {
           navigate(tvPath(showData.id, showData.name), { replace: true });
@@ -96,32 +79,6 @@ const TVShowDetails = () => {
       } finally {
         setLoading(false);
       }
-    };
-
-    const updateMetaTag = (name: string, content: string) => {
-      if (!content) return;
-      let tag = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
-      if (!tag) {
-        tag = document.createElement('meta');
-        if (name.startsWith('og:') || name.startsWith('twitter:')) {
-          const attr = name.startsWith('og:') ? 'property' : 'name';
-          tag.setAttribute(attr, name);
-        } else {
-          tag.setAttribute('name', name);
-        }
-        document.head.appendChild(tag);
-      }
-      tag.setAttribute('content', content);
-    }
-
-    const updateCanonicalTag = (url: string) => {
-      let link: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
-      if (!link) {
-        link = document.createElement('link');
-        link.setAttribute('rel', 'canonical');
-        document.head.appendChild(link);
-      }
-      link.setAttribute('href', url);
     };
 
     if (slug) {
@@ -183,8 +140,54 @@ const TVShowDetails = () => {
   const cast = credits?.cast?.slice(0, 10) || [];
   const creators = show.created_by || [];
 
+  // ── SEO computed values ──────────────────────────────────────────────────
+  const pageUrl = `https://deazons.com${tvPath(show.id, show.name)}`;
+  const pageTitle = show.first_air_date
+    ? `${show.name} (${new Date(show.first_air_date).getFullYear()}) | Deazons`
+    : `${show.name} | Séries | Deazons`;
+  const pageDesc = show.overview
+    ? show.overview
+    : `Veja detalhes, episódios, elenco e onde assistir à série ${show.name} no Deazons.`;
+  const pageImg = getImageUrl(show.backdrop_path, BACKDROP_SIZES.ORIGINAL)
+    || getImageUrl(show.poster_path, POSTER_SIZES.LARGE);
+
+  const showJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TVSeries",
+    "name": show.name,
+    "description": pageDesc.substring(0, 300),
+    "image": pageImg,
+    "url": pageUrl,
+    ...(show.first_air_date && { "startDate": show.first_air_date }),
+    ...(show.last_air_date && { "endDate": show.last_air_date }),
+    "numberOfSeasons": show.number_of_seasons,
+    "numberOfEpisodes": show.number_of_episodes,
+    ...(creators.length > 0 && {
+      "creator": creators.map(c => ({ "@type": "Person", "name": c.name }))
+    }),
+    ...(show.genres?.length > 0 && {
+      "genre": show.genres.map(g => g.name)
+    }),
+    ...(show.vote_average > 0 && {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": show.vote_average.toFixed(1),
+        "bestRating": "10",
+        "ratingCount": show.vote_count
+      }
+    })
+  };
+
   return (
     <div className="min-h-screen pb-10 pt-16">
+      <SeoHead
+        title={pageTitle}
+        description={pageDesc}
+        image={pageImg}
+        type="video.tv_show"
+        jsonLd={showJsonLd}
+        canonicalOverride={pageUrl}
+      />
       {/* Trailer Modal */}
       {trailerOpen && trailer && (
         <TrailerModal

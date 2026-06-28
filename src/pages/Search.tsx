@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search as SearchIcon } from "lucide-react";
 import MediaCard from "@/components/MediaCard";
 import PersonCard from "@/components/PersonCard";
+import SeoHead from "@/components/SeoHead";
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -97,6 +98,11 @@ const Search = () => {
 
   return (
     <div className="min-h-screen pb-10 pt-24">
+      <SeoHead
+        title={query ? `Busca por "${query}" | Deazons` : "Busca | Deazons"}
+        description="Pesquise filmes, séries e atores no Deazons."
+        noIndex
+      />
       <div className="container max-w-6xl">
         <h1 className="text-3xl font-bold mb-6">Busca</h1>
         

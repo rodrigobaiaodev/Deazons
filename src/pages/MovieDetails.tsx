@@ -22,6 +22,7 @@ import WatchProviders from "@/components/WatchProviders";
 import { Play, Star, Calendar, Clock, Users, DollarSign } from "lucide-react";
 import NotFound from "./NotFound";
 import { extractId, moviePath } from "@/lib/slug";
+import SeoHead from "@/components/SeoHead";
 
 const MovieDetails = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -58,25 +59,7 @@ const MovieDetails = () => {
         setVideos(videosData.results);
         setSimilarMovies(similarData.results);
 
-        // --- SEO & META TAGS ---
-        const pageUrl = `https://deazons.com${moviePath(movieData.id, movieData.title)}`;
-        const pageTitle = `${movieData.title} (${new Date(movieData.release_date).getFullYear()}) | Deazons`;
-        const pageDesc = movieData.overview ? `${movieData.overview.substring(0, 160)}...` : `Veja detalhes, elenco e onde assistir ao filme ${movieData.title} no Deazons.`;
-        const pageImg = getImageUrl(movieData.backdrop_path, BACKDROP_SIZES.ORIGINAL);
-
-        document.title = pageTitle;
-        updateMetaTag('description', pageDesc);
-        updateMetaTag('og:title', pageTitle);
-        updateMetaTag('og:description', pageDesc);
-        updateMetaTag('og:image', pageImg);
-        updateMetaTag('og:url', pageUrl);
-        updateMetaTag('og:type', 'video.movie');
-        updateMetaTag('twitter:title', pageTitle);
-        updateMetaTag('twitter:description', pageDesc);
-        updateMetaTag('twitter:image', pageImg);
-        updateCanonicalTag(pageUrl);
-
-        // Redirect to slug URL if not already there
+        // Redirect to canonical slug URL if needed
         const expectedSlug = moviePath(movieData.id, movieData.title).replace("/filmes/", "");
         if (slug !== expectedSlug) {
           navigate(moviePath(movieData.id, movieData.title), { replace: true });
@@ -96,32 +79,6 @@ const MovieDetails = () => {
       } finally {
         setLoading(false);
       }
-    };
-
-    const updateMetaTag = (name: string, content: string) => {
-      if (!content) return;
-      let tag = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
-      if (!tag) {
-        tag = document.createElement('meta');
-        if (name.startsWith('og:') || name.startsWith('twitter:')) {
-          const attr = name.startsWith('og:') ? 'property' : 'name';
-          tag.setAttribute(attr, name);
-        } else {
-          tag.setAttribute('name', name);
-        }
-        document.head.appendChild(tag);
-      }
-      tag.setAttribute('content', content);
-    }
-
-    const updateCanonicalTag = (url: string) => {
-      let link: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
-      if (!link) {
-        link = document.createElement('link');
-        link.setAttribute('rel', 'canonical');
-        document.head.appendChild(link);
-      }
-      link.setAttribute('href', url);
     };
 
     if (slug) {
@@ -179,8 +136,51 @@ const MovieDetails = () => {
   const directors = credits?.crew?.filter(p => p.job === "Director") || [];
   const movieId = extractId(slug!);
 
+  // ── SEO computed values ──────────────────────────────────────────────────
+  const pageUrl = `https://deazons.com${moviePath(movie.id, movie.title)}`;
+  const pageTitle = movie.release_date
+    ? `${movie.title} (${new Date(movie.release_date).getFullYear()}) | Deazons`
+    : `${movie.title} | Deazons`;
+  const pageDesc = movie.overview
+    ? movie.overview
+    : `Veja detalhes, elenco e onde assistir ao filme ${movie.title} no Deazons.`;
+  const pageImg = getImageUrl(movie.backdrop_path, BACKDROP_SIZES.ORIGINAL)
+    || getImageUrl(movie.poster_path, POSTER_SIZES.LARGE);
+
+  const movieJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Movie",
+    "name": movie.title,
+    "description": pageDesc.substring(0, 300),
+    "image": pageImg,
+    "datePublished": movie.release_date,
+    "url": pageUrl,
+    ...(directors.length > 0 && {
+      "director": directors.map(d => ({ "@type": "Person", "name": d.name }))
+    }),
+    ...(movie.genres?.length > 0 && {
+      "genre": movie.genres.map(g => g.name)
+    }),
+    ...(movie.vote_average > 0 && {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": movie.vote_average.toFixed(1),
+        "bestRating": "10",
+        "ratingCount": movie.vote_count
+      }
+    })
+  };
+
   return (
     <div className="min-h-screen pb-10 pt-16">
+      <SeoHead
+        title={pageTitle}
+        description={pageDesc}
+        image={pageImg}
+        type="video.movie"
+        jsonLd={movieJsonLd}
+        canonicalOverride={pageUrl}
+      />
       {/* Trailer Modal */}
       {trailerOpen && trailer && (
         <TrailerModal

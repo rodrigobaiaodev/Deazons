@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import NewsCard, { NewsArticle } from "@/components/NewsCard";
 import { supabase, Article } from "@/lib/supabase";
+import SeoHead from "@/components/SeoHead";
 
 const NewsList = () => {
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,11 @@ const NewsList = () => {
 
   return (
     <div className="min-h-screen pb-20 pt-24 bg-background">
+      <SeoHead
+        title="Notícias e Artigos | Deazons"
+        description="Fique por dentro das últimas novidades do cinema, séries e cultura pop no Deazons. Atualizações diárias sobre estreias, trailers e muito mais."
+        canonicalOverride="https://deazons.com/noticias"
+      />
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-4 mb-12">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">

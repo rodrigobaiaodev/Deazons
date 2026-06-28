@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import SeoHead from "@/components/SeoHead";
 
 const NewsArticlePage = () => {
   const { id } = useParams();
@@ -28,61 +29,6 @@ const NewsArticlePage = () => {
       
       if (data && !error) {
         setArticle(data);
-        
-        // --- SEO & META TAGS ---
-        const pageUrl = `https://deazons.com/noticias/${data.slug}`;
-        document.title = `${data.title} | Deazons`;
-        
-        // Update Meta Description
-        updateMetaTag('description', data.meta_description);
-        updateMetaTag('og:title', data.title);
-        updateMetaTag('og:description', data.meta_description);
-        updateMetaTag('og:image', data.image_url);
-        updateMetaTag('og:url', pageUrl);
-        updateMetaTag('og:type', 'article');
-        updateMetaTag('twitter:title', data.title);
-        updateMetaTag('twitter:description', data.meta_description);
-        updateMetaTag('twitter:image', data.image_url);
-
-        // Canonical Link
-        updateCanonicalTag(pageUrl);
-
-        // JSON-LD NewsArticle
-        const jsonLd = {
-          "@context": "https://schema.org",
-          "@type": "NewsArticle",
-          "headline": data.title,
-          "description": data.meta_description,
-          "image": [data.image_url],
-          "datePublished": data.published_at || data.created_at,
-          "dateModified": data.updated_at || data.created_at,
-          "author": [{
-            "@type": "Organization",
-            "name": "Equipe Deazons",
-            "url": "https://deazons.com"
-          }],
-          "publisher": {
-            "@type": "Organization",
-            "name": "Deazons",
-            "logo": {
-              "@type": "ImageObject",
-              "url": "https://deazons.com/deazons-logo.png"
-            }
-          },
-          "mainEntityOfPage": {
-            "@type": "WebPage",
-            "@id": pageUrl
-          }
-        };
-        
-        let script = document.getElementById('json-ld-article');
-        if (!script) {
-          script = document.createElement('script');
-          script.id = 'json-ld-article';
-          script.setAttribute('type', 'application/ld+json');
-          document.head.appendChild(script);
-        }
-        script.textContent = JSON.stringify(jsonLd);
 
         // --- RELACIONADOS ---
         const { data: related } = await supabase
@@ -97,42 +43,9 @@ const NewsArticlePage = () => {
       setLoading(false);
     };
 
-    const updateMetaTag = (name: string, content: string) => {
-      if (!content) return;
-      let tag = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
-      if (!tag) {
-        tag = document.createElement('meta');
-        if (name.startsWith('og:') || name.startsWith('twitter:')) {
-          const attr = name.startsWith('og:') ? 'property' : 'name';
-          tag.setAttribute(attr, name);
-        } else {
-          tag.setAttribute('name', name);
-        }
-        document.head.appendChild(tag);
-      }
-      tag.setAttribute('content', content);
-    }
-
-    const updateCanonicalTag = (url: string) => {
-      let link: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
-      if (!link) {
-        link = document.createElement('link');
-        link.setAttribute('rel', 'canonical');
-        document.head.appendChild(link);
-      }
-      link.setAttribute('href', url);
-    };
-
     if (id) {
       fetchArticle();
     }
-    
-    return () => {
-      // Cleanup
-      const script = document.getElementById('json-ld-article');
-      if (script) script.remove();
-      // Reset title to default if needed or handled by other pages
-    };
   }, [id, isPreview]);
 
   // Helper to generate Table of Contents from content
@@ -196,6 +109,29 @@ const NewsArticlePage = () => {
 
   return (
     <article className="min-h-screen pt-24 pb-20 bg-background text-foreground">
+      <SeoHead
+        title={`${article.title} | Deazons`}
+        description={article.meta_description || article.title}
+        image={article.image_url}
+        type="article"
+        canonicalOverride={`https://deazons.com/noticias/${article.slug}`}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "NewsArticle",
+          "headline": article.title,
+          "description": article.meta_description,
+          "image": [article.image_url],
+          "datePublished": article.published_at || article.created_at,
+          "dateModified": article.updated_at || article.created_at,
+          "author": [{ "@type": "Organization", "name": "Equipe Deazons", "url": "https://deazons.com" }],
+          "publisher": {
+            "@type": "Organization",
+            "name": "Deazons",
+            "logo": { "@type": "ImageObject", "url": "https://deazons.com/deazons-logo.png" }
+          },
+          "mainEntityOfPage": { "@type": "WebPage", "@id": `https://deazons.com/noticias/${article.slug}` }
+        }}
+      />
       <div className="max-w-[780px] mx-auto px-4 sm:px-6">
         {/* Navegação */}
         <Button

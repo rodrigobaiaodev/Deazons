@@ -1,8 +1,8 @@
-
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import SeoHead from "@/components/SeoHead";
 
 const NotFound = () => {
   const location = useLocation();
@@ -16,6 +16,11 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
+      <SeoHead 
+        title="Página Não Encontrada | Deazons"
+        description="A página que você está procurando não foi encontrada no Deazons."
+        noIndex={true}
+      />
       <div className="text-center max-w-md">
         <h1 className="text-9xl font-bold text-deazon-600">404</h1>
         <p className="text-xl text-muted-foreground mt-4 mb-6">

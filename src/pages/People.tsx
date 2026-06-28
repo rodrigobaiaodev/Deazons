@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import PersonCard from "@/components/PersonCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import SeoHead from "@/components/SeoHead";
 
 const People = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,6 +58,11 @@ const People = () => {
 
   return (
     <div className="min-h-screen pb-10 pt-24">
+      <SeoHead
+        title="Atores e Diretores Populares | Deazons"
+        description="Conheça os atores, atrizes e diretores mais populares do cinema e das séries no Deazons. Filmografias completas e biografias."
+        canonicalOverride="https://deazons.com/pessoas"
+      />
       <div className="container max-w-7xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Pessoas Populares</h1>

@@ -5,6 +5,7 @@ import { useMedia } from "@/hooks/useMedia";
 import MediaFilters from "@/components/MediaFilters";
 import MediaGrid from "@/components/MediaGrid";
 import MediaPagination from "@/components/MediaPagination";
+import SeoHead from "@/components/SeoHead";
 
 const TVShows = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -66,8 +67,12 @@ const TVShows = () => {
     setSearchParams(params);
   };
 
+  const seoTitle = getFilterTitle() + " | Deazons";
+  const seoDesc = `Explore nossa coleção de ${getFilterTitle().toLowerCase()} no Deazons. Encontre trailers, elenco e onde assistir.`;
+
   return (
     <div className="min-h-screen pb-10 pt-24">
+      <SeoHead title={seoTitle} description={seoDesc} />
       <div className="container max-w-7xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold tracking-tight">{getFilterTitle()}</h1>

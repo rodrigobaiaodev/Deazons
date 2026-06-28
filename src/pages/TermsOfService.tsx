@@ -1,9 +1,14 @@
-
 import { Link } from "react-router-dom";
+import SeoHead from "@/components/SeoHead";
 
 const TermsOfService = () => {
   return (
     <div className="min-h-screen pt-8 pb-16">
+      <SeoHead
+        title="Termos de Serviço | Deazons"
+        description="Leia os Termos de Serviço do Deazons. Condições de uso, políticas do site e diretrizes de utilização da nossa plataforma."
+        canonicalOverride="https://deazons.com/termos"
+      />
       <div className="container max-w-4xl">
         <h1 className="text-3xl font-bold mb-6">Termos de Serviço</h1>
         

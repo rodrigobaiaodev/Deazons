@@ -6,6 +6,7 @@ import MediaRow from "@/components/MediaRow";
 import LatestTrailers from "@/components/LatestTrailers";
 import HomeNewsSection from "@/components/HomeNewsSection";
 import { useToast } from "@/components/ui/use-toast";
+import SeoHead from "@/components/SeoHead";
 
 const Home = () => {
   const { toast } = useToast();
@@ -71,6 +72,11 @@ const Home = () => {
 
   return (
     <div className="pb-16 bg-background min-h-screen">
+      <SeoHead
+        title="Deazons | Filmes, Séries e Notícias de Entretenimento"
+        description="Descubra informações sobre milhares de filmes, séries e atores no Deazons - seu portal completo de entretenimento com notícias, trailers e onde assistir."
+        canonicalOverride="https://deazons.com/"
+      />
       {trendingMovies.length > 0 && <HeroBanner movie={trendingMovies[0]} />}
       
       <div className="container space-y-4 md:space-y-8 pt-10">

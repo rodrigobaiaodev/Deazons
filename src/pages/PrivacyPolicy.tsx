@@ -1,9 +1,14 @@
-
 import { Link } from "react-router-dom";
+import SeoHead from "@/components/SeoHead";
 
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen pt-8 pb-16">
+      <SeoHead
+        title="Política de Privacidade | Deazons"
+        description="Leia a Política de Privacidade do Deazons e saiba como coletamos e protegemos seus dados em nosso site."
+        canonicalOverride="https://deazons.com/privacidade"
+      />
       <div className="container max-w-4xl">
         <h1 className="text-3xl font-bold mb-6">Política de Privacidade</h1>
         

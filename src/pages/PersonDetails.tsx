@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MediaRow from "@/components/MediaRow";
 import { Film, Tv, Calendar, MapPin } from "lucide-react";
 import NotFound from "./NotFound";
+import SeoHead from "@/components/SeoHead";
 
 const PersonDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,24 +48,6 @@ const PersonDetails = () => {
         setMovieCredits(personMovieCredits);
         setTVCredits(personTVCredits);
 
-        // --- SEO & META TAGS ---
-        const pageUrl = `https://deazons.com/pessoas/${id}`;
-        const pageTitle = `${personData.name} | Deazons`;
-        const pageDesc = personData.biography ? `${personData.biography.substring(0, 160)}...` : `Conheça a biografia e filmografia de ${personData.name} no Deazons.`;
-        const pageImg = getImageUrl(personData.profile_path, PROFILE_SIZES.LARGE);
-
-        document.title = pageTitle;
-        updateMetaTag('description', pageDesc);
-        updateMetaTag('og:title', pageTitle);
-        updateMetaTag('og:description', pageDesc);
-        updateMetaTag('og:image', pageImg);
-        updateMetaTag('og:url', pageUrl);
-        updateMetaTag('og:type', 'profile');
-        updateMetaTag('twitter:title', pageTitle);
-        updateMetaTag('twitter:description', pageDesc);
-        updateMetaTag('twitter:image', pageImg);
-        updateCanonicalTag(pageUrl);
-
       } catch (err) {
         console.error("Error fetching person details:", err);
         
@@ -81,32 +64,6 @@ const PersonDetails = () => {
       } finally {
         setLoading(false);
       }
-    };
-
-    const updateMetaTag = (name: string, content: string) => {
-      if (!content) return;
-      let tag = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
-      if (!tag) {
-        tag = document.createElement('meta');
-        if (name.startsWith('og:') || name.startsWith('twitter:')) {
-          const attr = name.startsWith('og:') ? 'property' : 'name';
-          tag.setAttribute(attr, name);
-        } else {
-          tag.setAttribute('name', name);
-        }
-        document.head.appendChild(tag);
-      }
-      tag.setAttribute('content', content);
-    }
-
-    const updateCanonicalTag = (url: string) => {
-      let link: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
-      if (!link) {
-        link = document.createElement('link');
-        link.setAttribute('rel', 'canonical');
-        document.head.appendChild(link);
-      }
-      link.setAttribute('href', url);
     };
     
     if (id) {
@@ -180,8 +137,23 @@ const PersonDetails = () => {
   const sortedMovieCast = movieCredits?.cast ? sortMoviesByPopularity(movieCredits.cast) : [];
   const sortedTVCast = tvCredits?.cast ? sortTVShowsByPopularity(tvCredits.cast) : [];
 
+  // ── SEO computed values ──────────────────────────────────────────────────
+  const personUrl = `https://deazons.com/pessoas/${id}`;
+  const personTitle = `${person.name} | Deazons`;
+  const personDesc = person.biography
+    ? person.biography
+    : `Conheça a biografia e filmografia de ${person.name} no Deazons.`;
+  const personImg = getImageUrl(person.profile_path, PROFILE_SIZES.LARGE);
+
   return (
     <div className="min-h-screen pb-10 pt-24">
+      <SeoHead
+        title={personTitle}
+        description={personDesc}
+        image={personImg}
+        type="profile"
+        canonicalOverride={personUrl}
+      />
       <div className="container">
         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
           {/* Sidebar with person image and info */}

@@ -1,10 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
+import SeoHead from "@/components/SeoHead";
 
 const About = () => {
   return (
     <div className="min-h-screen pb-16 pt-24">
+      <SeoHead
+        title="Sobre o Deazons | Filmes, Séries e Entretenimento"
+        description="Conheça o Deazons, seu portal completo sobre filmes, séries e personalidades do cinema. Saiba como usamos o TMDB para trazer informações precisas."
+        canonicalOverride="https://deazons.com/sobre"
+      />
       <div className="container max-w-4xl">
         <h1 className="text-4xl font-bold mb-6">Sobre o Deazons</h1>
         

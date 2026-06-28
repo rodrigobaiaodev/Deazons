@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import SeoHead from "@/components/SeoHead";
 
 const Contact = () => {
   const { toast } = useToast();
@@ -32,6 +33,11 @@ const Contact = () => {
   
   return (
     <div className="min-h-screen pt-8 pb-16">
+      <SeoHead
+        title="Contato | Deazons"
+        description="Entre em contato com a equipe do Deazons. Tire suas dúvidas, dê sugestões ou envie seu feedback sobre nosso portal de filmes e séries."
+        canonicalOverride="https://deazons.com/contato"
+      />
       <div className="container max-w-4xl">
         <h1 className="text-3xl font-bold mb-6">Entre em Contato</h1>
         
