@@ -122,6 +122,7 @@ function updatePagesSitemap() {
     { loc: `${BASE_URL}/privacidade`, lastmod: TODAY, changefreq: 'monthly', priority: '0.4' },
     { loc: `${BASE_URL}/termos`,      lastmod: TODAY, changefreq: 'monthly', priority: '0.4' },
     { loc: `${BASE_URL}/contato`,     lastmod: TODAY, changefreq: 'monthly', priority: '0.4' },
+    { loc: `${BASE_URL}/blog`,        lastmod: TODAY, changefreq: 'daily',   priority: '0.9' },
   ];
   fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap-pages.xml'), buildUrlsetXml(pages), 'utf8');
   console.log('✅ sitemap-pages.xml atualizado com 9 URLs');
@@ -157,6 +158,7 @@ Sitemap: ${BASE_URL}/sitemap.xml
 Sitemap: ${BASE_URL}/sitemap-index.xml
 Sitemap: ${BASE_URL}/sitemap-pages.xml
 Sitemap: ${BASE_URL}/sitemap-articles.xml
+Sitemap: ${BASE_URL}/sitemap-blog.xml
 Sitemap: ${BASE_URL}/sitemap-movies.xml
 Sitemap: ${BASE_URL}/sitemap-series.xml
 Sitemap: ${BASE_URL}/sitemap-people.xml
@@ -183,6 +185,10 @@ function updateSitemapIndex(articleCount) {
   </sitemap>
   <sitemap>
     <loc>${BASE_URL}/sitemap-series.xml</loc>
+    <lastmod>${TODAY}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${BASE_URL}/sitemap-blog.xml</loc>
     <lastmod>${TODAY}</lastmod>
   </sitemap>
   <sitemap>

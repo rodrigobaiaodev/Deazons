@@ -78,6 +78,7 @@ async function generateSitemaps() {
     { loc: `${BASE_URL}/privacidade`, priority: '0.5', changefreq: 'monthly' },
     { loc: `${BASE_URL}/termos`,      priority: '0.5', changefreq: 'monthly' },
     { loc: `${BASE_URL}/contato`,     priority: '0.5', changefreq: 'monthly' },
+    { loc: `${BASE_URL}/blog`,        priority: '0.9', changefreq: 'daily'   },
   ];
   fs.writeFileSync(path.join(publicDir, 'sitemap-pages.xml'), createSitemapXml(pagesUrls));
   staticSitemaps.push({ file: 'sitemap-pages.xml', loc: `${BASE_URL}/sitemap-pages.xml` });
@@ -136,7 +137,43 @@ async function generateSitemaps() {
     console.log(`✅ sitemap-people.xml gerado (${peopleUrls.length} links).`);
   }
 
-  // 5. Sitemap Index
+  // 5. Blog
+  console.log('📝 Gerando Sitemap do Blog...');
+  try {
+    const postsTsPath = path.join(process.cwd(), 'src/blog/data/posts.ts');
+    const postsTsContent = fs.readFileSync(postsTsPath, 'utf8');
+    const slugRegex = /slug:\s*"([^"]+)"/g;
+    const publishedAtRegex = /publishedAt:\s*"([^"]+)"/g;
+    
+    let match;
+    const blogUrls = [];
+    
+    const slugs = [];
+    const dates = [];
+    while ((match = slugRegex.exec(postsTsContent)) !== null) {
+      slugs.push(match[1]);
+    }
+    while ((match = publishedAtRegex.exec(postsTsContent)) !== null) {
+      dates.push(match[1]);
+    }
+    
+    for (let i = 0; i < slugs.length; i++) {
+      blogUrls.push({
+        loc: `${BASE_URL}/blog/${slugs[i]}`,
+        priority: '0.8',
+        changefreq: 'monthly',
+        lastmod: dates[i] || TODAY
+      });
+    }
+    
+    fs.writeFileSync(path.join(publicDir, 'sitemap-blog.xml'), createSitemapXml(blogUrls));
+    staticSitemaps.push({ file: 'sitemap-blog.xml', loc: `${BASE_URL}/sitemap-blog.xml` });
+    console.log(`✅ sitemap-blog.xml gerado (${blogUrls.length} links).`);
+  } catch (err) {
+    console.error('❌ Erro ao gerar sitemap do blog:', err.message);
+  }
+
+  // 6. Sitemap Index
   // Articles are served by the dynamic Vercel serverless function /api/sitemap-articles
   // which always returns the latest published articles — avoids a stale static snapshot.
   const indexXml = `<?xml version="1.0" encoding="UTF-8"?>

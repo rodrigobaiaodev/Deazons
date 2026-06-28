@@ -7,6 +7,12 @@ import LatestTrailers from "@/components/LatestTrailers";
 import HomeNewsSection from "@/components/HomeNewsSection";
 import { useToast } from "@/components/ui/use-toast";
 import SeoHead from "@/components/SeoHead";
+import { Link } from "react-router-dom";
+import { blogPosts } from "@/blog/data/posts";
+import imagesDataRaw from "@/blog/data/images.json";
+import { CalendarDays, BookOpen } from "lucide-react";
+
+const imagesData = imagesDataRaw as Record<string, { url: string; alt: string; photographer: string }[]>;
 
 const Home = () => {
   const { toast } = useToast();
@@ -137,6 +143,47 @@ const Home = () => {
             seeAllLink="/series?filter=top_rated"
           />
         )}
+
+        <section className="mt-12 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <BookOpen className="w-6 h-6 text-primary" />
+              Artigos & Guias
+            </h2>
+            <Link to="/blog" className="text-sm font-medium text-primary hover:underline">
+              Ver todos →
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {blogPosts.slice(0, 6).map(post => {
+              const coverImage = (imagesData[post.slug] || [])[0]?.url || "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2670&auto=format&fit=crop";
+              return (
+                <Link key={post.slug} to={`/blog/${post.slug}`} className="group flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden hover:border-primary/50 transition-colors">
+                  <div className="aspect-video overflow-hidden relative">
+                    <img 
+                      src={coverImage} 
+                      alt={post.title} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                  </div>
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                      <CalendarDays className="w-3.5 h-3.5" />
+                      <time dateTime={post.publishedAt}>
+                        {new Date(post.publishedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                      </time>
+                    </div>
+                    <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
       </div>
     </div>
   );

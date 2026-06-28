@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Home, Film, Tv, Users, Info, Newspaper } from "lucide-react";
+import { X, Home, Film, Tv, Users, Info, Newspaper, BookOpen } from "lucide-react";
 import Logo from "./Logo";
 
 interface MobileMenuProps {
@@ -17,6 +17,7 @@ const navItems = [
   { path: "/series", label: "Séries", icon: Tv },
   { path: "/pessoas", label: "Pessoas", icon: Users },
   { path: "/noticias", label: "Notícias", icon: Newspaper },
+  { path: "/blog", label: "Blog", icon: BookOpen },
   { path: "/sobre", label: "Sobre", icon: Info },
 ];
 

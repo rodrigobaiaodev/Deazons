@@ -26,6 +26,8 @@ import SitemapGenerator from "./components/SitemapGenerator";
 import NewsList from "./pages/NewsList";
 import NewsArticlePage from "./pages/NewsArticlePage";
 import AdminRSS from "./pages/AdminRSS";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient({
@@ -65,6 +67,8 @@ const App = () => (
             <Route path="/noticias" element={<NewsList />} />
             <Route path="/noticias/:id" element={<NewsArticlePage />} />
             <Route path="/admin/rss" element={<AdminRSS />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

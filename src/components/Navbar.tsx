@@ -14,6 +14,7 @@ const navLinks = [
   { path: "/series", label: "Séries" },
   { path: "/pessoas", label: "Pessoas" },
   { path: "/noticias", label: "Notícias" },
+  { path: "/blog", label: "Blog" },
 ];
 
 const Navbar = () => {
