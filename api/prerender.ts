@@ -1,10 +1,10 @@
 /**
- * Vercel Serverless Function — Bot Prerender
+ * Vercel Serverless Function ÔÇö Bot Prerender
  * 
  * Detects Googlebot/crawlers and returns HTML enriquecido com meta tags
- * extraídas do Supabase (para artigos) ou TMDB (para filmes/séries).
+ * extra├¡das do Supabase (para artigos) ou TMDB (para filmes/s├®ries).
  * 
- * Esta função é chamada pelo vercel.json para rotas específicas.
+ * Esta fun├º├úo ├® chamada pelo vercel.json para rotas espec├¡ficas.
  */
 
 import { blogPosts } from '../src/blog/data/posts.js';
@@ -23,7 +23,7 @@ const BOT_REGEX = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|sog
 // Cache in-memory para chamadas TMDB
 const tmdbCache = new Map();
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas em milissegundos
-const MAX_CACHE_SIZE = 1000; // Limite de entradas para evitar leak de memória
+const MAX_CACHE_SIZE = 1000; // Limite de entradas para evitar leak de mem├│ria
 
 async function fetchWithCache(url, cacheKey) {
   const now = Date.now();
@@ -37,7 +37,7 @@ async function fetchWithCache(url, cacheKey) {
     tmdbCache.delete(cacheKey);
   }
 
-  // Evicção se o cache ultrapassar o limite máximo
+  // Evic├º├úo se o cache ultrapassar o limite m├íximo
   if (tmdbCache.size >= MAX_CACHE_SIZE) {
     const oldestKey = tmdbCache.keys().next().value;
     tmdbCache.delete(oldestKey);
@@ -119,10 +119,10 @@ export default async function handler(req, res) {
   const TMDB_KEY = process.env.VITE_TMDB_API_KEY || '6ea976a00b674fb5087f7e37ff72f45c';
 
   try {
-    // ── 1. HOME PAGE ──────────────────────────────────────────────────────────
+    // ÔöÇÔöÇ 1. HOME PAGE ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
     if (urlPath === '/' || urlPath === '/index.html' || urlPath === '') {
-      const title = 'Deazons | Filmes, Séries e Notícias de Entretenimento';
-      const description = 'Descubra informações sobre milhares de filmes, séries e atores no Deazons - seu portal completo de entretenimento com notícias, trailers e onde assistir.';
+      const title = 'Deazons | Filmes, S├®ries e Not├¡cias de Entretenimento';
+      const description = 'Descubra informa├º├Áes sobre milhares de filmes, s├®ries e atores no Deazons - seu portal completo de entretenimento com not├¡cias, trailers e onde assistir.';
       const canonicalUrl = 'https://deazons.com/';
       const html = buildHTML({
         title,
@@ -138,10 +138,10 @@ export default async function handler(req, res) {
       return res.status(200).send(html);
     }
 
-    // ── 2. CATEGORY LIST PAGES ───────────────────────────────────────────────
+    // ÔöÇÔöÇ 2. CATEGORY LIST PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
     if (urlPath === '/filmes') {
       const title = 'Filmes Populares | Deazons';
-      const description = 'Explore nossa coleção de filmes populares no Deazons. Encontre trailers, elenco, onde assistir e muito mais.';
+      const description = 'Explore nossa cole├º├úo de filmes populares no Deazons. Encontre trailers, elenco, onde assistir e muito mais.';
       const canonicalUrl = 'https://deazons.com/filmes';
       const html = buildHTML({
         title,
@@ -158,8 +158,8 @@ export default async function handler(req, res) {
     }
 
     if (urlPath === '/series') {
-      const title = 'Séries Populares | Deazons';
-      const description = 'Explore nossa coleção de séries populares no Deazons. Encontre trailers, elenco, onde assistir e muito mais.';
+      const title = 'S├®ries Populares | Deazons';
+      const description = 'Explore nossa cole├º├úo de s├®ries populares no Deazons. Encontre trailers, elenco, onde assistir e muito mais.';
       const canonicalUrl = 'https://deazons.com/series';
       const html = buildHTML({
         title,
@@ -177,7 +177,7 @@ export default async function handler(req, res) {
 
     if (urlPath === '/pessoas') {
       const title = 'Famosos, Atores e Atrizes | Deazons';
-      const description = 'Conheça os atores, atrizes e cineastas mais populares do momento. Veja biografias, fotos e filmografias no Deazons.';
+      const description = 'Conhe├ºa os atores, atrizes e cineastas mais populares do momento. Veja biografias, fotos e filmografias no Deazons.';
       const canonicalUrl = 'https://deazons.com/pessoas';
       const html = buildHTML({
         title,
@@ -194,8 +194,8 @@ export default async function handler(req, res) {
     }
 
     if (urlPath === '/noticias') {
-      const title = 'Notícias de Filmes, Séries e Cinema | Deazons';
-      const description = 'Acompanhe as últimas notícias, novidades, rumores e lançamentos do mundo do cinema, séries de TV e streaming no Deazons.';
+      const title = 'Not├¡cias de Filmes, S├®ries e Cinema | Deazons';
+      const description = 'Acompanhe as ├║ltimas not├¡cias, novidades, rumores e lan├ºamentos do mundo do cinema, s├®ries de TV e streaming no Deazons.';
       const canonicalUrl = 'https://deazons.com/noticias';
       const html = buildHTML({
         title,
@@ -213,7 +213,7 @@ export default async function handler(req, res) {
 
     if (urlPath === '/blog') {
       const title = 'Blog de Cinema e Entretenimento | Deazons';
-      const description = 'Artigos, análises, listas e curiosidades sobre o mundo do cinema, séries de TV e streaming no Blog do Deazons.';
+      const description = 'Artigos, an├ílises, listas e curiosidades sobre o mundo do cinema, s├®ries de TV e streaming no Blog do Deazons.';
       const canonicalUrl = 'https://deazons.com/blog';
       const html = buildHTML({
         title,
@@ -229,23 +229,23 @@ export default async function handler(req, res) {
       return res.status(200).send(html);
     }
 
-    // ── 3. STATIC INSTITUTIONAL PAGES ───────────────────────────────────────
+    // ÔöÇÔöÇ 3. STATIC INSTITUTIONAL PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
     const staticPages = {
       '/sobre': {
-        title: 'Sobre o Deazons | Filmes, Séries e Entretenimento',
-        description: 'Saiba mais sobre o Deazons, nossa missão e como trazemos as melhores informações sobre cinema e entretenimento para você.'
+        title: 'Sobre o Deazons | Filmes, S├®ries e Entretenimento',
+        description: 'Saiba mais sobre o Deazons, nossa miss├úo e como trazemos as melhores informa├º├Áes sobre cinema e entretenimento para voc├¬.'
       },
       '/privacidade': {
-        title: 'Política de Privacidade | Deazons',
-        description: 'Leia a Política de Privacidade do Deazons. Saiba como coletamos, usamos e protegemos seus dados pessoais.'
+        title: 'Pol├¡tica de Privacidade | Deazons',
+        description: 'Leia a Pol├¡tica de Privacidade do Deazons. Saiba como coletamos, usamos e protegemos seus dados pessoais.'
       },
       '/termos': {
-        title: 'Termos de Serviço | Deazons',
-        description: 'Leia os Termos de Serviço do Deazons. Condições de uso, políticas do site e diretrizes de utilização da nossa plataforma.'
+        title: 'Termos de Servi├ºo | Deazons',
+        description: 'Leia os Termos de Servi├ºo do Deazons. Condi├º├Áes de uso, pol├¡ticas do site e diretrizes de utiliza├º├úo da nossa plataforma.'
       },
       '/contato': {
         title: 'Contato | Deazons',
-        description: 'Entre em contato com a equipe do Deazons para parcerias, sugestões, dúvidas ou feedback.'
+        description: 'Entre em contato com a equipe do Deazons para parcerias, sugest├Áes, d├║vidas ou feedback.'
       }
     };
 
@@ -265,8 +265,8 @@ export default async function handler(req, res) {
       return res.status(200).send(html);
     }
 
-    // ── 4. MOVIE DETAILS AND CAST PAGES ──────────────────────────────────────
-    const movieMatch = urlPath.match(/^const images = [];/filmesconst images = [];/(const images = [];d+)-?([^/]*)/);
+    // ÔöÇÔöÇ 4. MOVIE DETAILS AND CAST PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    const movieMatch = urlPath.match(/^\/filmes\/(\d+)-?([^/]*)/);
     if (movieMatch) {
       const movieId = movieMatch[1];
       const movieSlug = movieMatch[2] || '';
@@ -289,7 +289,7 @@ export default async function handler(req, res) {
           
           if (isCastPage) {
             title = `Elenco de ${movie.title}${year ? ` (${year})` : ''} | Deazons`;
-            description = `Veja todo o elenco, atores, atrizes, diretores e equipe técnica do filme ${movie.title} no Deazons.`;
+            description = `Veja todo o elenco, atores, atrizes, diretores e equipe t├®cnica do filme ${movie.title} no Deazons.`;
           }
 
           const jsonLd = JSON.stringify({
@@ -312,7 +312,7 @@ export default async function handler(req, res) {
               <article>
                 <h1>${escapeHtml(title)}</h1>
                 <p>${escapeHtml(description)}</p>
-                ${movie.genres ? `<p><strong>Gêneros:</strong> ${movie.genres.map(g => escapeHtml(g.name)).join(', ')}</p>` : ''}
+                ${movie.genres ? `<p><strong>G├¬neros:</strong> ${movie.genres.map(g => escapeHtml(g.name)).join(', ')}</p>` : ''}
                 <p><a href="${canonicalUrl}">Ver no Deazons</a></p>
               </article>
             `
@@ -327,8 +327,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 5. TV SHOW DETAILS AND CAST PAGES ────────────────────────────────────
-    const seriesMatch = urlPath.match(/^const images = [];/seriesconst images = [];/(const images = [];d+)-?([^/]*)/);
+    // ÔöÇÔöÇ 5. TV SHOW DETAILS AND CAST PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    const seriesMatch = urlPath.match(/^\/series\/(\d+)-?([^/]*)/);
     if (seriesMatch) {
       const tvId = seriesMatch[1];
       const tvSlug = seriesMatch[2] || '';
@@ -347,11 +347,11 @@ export default async function handler(req, res) {
           const year = tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : '';
           
           let title = `${tv.name}${year ? ` (${year})` : ''} | Deazons`;
-          let description = tv.overview ? tv.overview.substring(0, 160) + '...' : `Veja detalhes, elenco e onde assistir à série ${tv.name} no Deazons.`;
+          let description = tv.overview ? tv.overview.substring(0, 160) + '...' : `Veja detalhes, elenco e onde assistir ├á s├®rie ${tv.name} no Deazons.`;
           
           if (isCastPage) {
             title = `Elenco de ${tv.name}${year ? ` (${year})` : ''} | Deazons`;
-            description = `Veja todo o elenco, atores, atrizes, diretores e equipe técnica da série ${tv.name} no Deazons.`;
+            description = `Veja todo o elenco, atores, atrizes, diretores e equipe t├®cnica da s├®rie ${tv.name} no Deazons.`;
           }
 
           const jsonLd = JSON.stringify({
@@ -374,7 +374,7 @@ export default async function handler(req, res) {
               <article>
                 <h1>${escapeHtml(title)}</h1>
                 <p>${escapeHtml(description)}</p>
-                ${tv.genres ? `<p><strong>Gêneros:</strong> ${tv.genres.map(g => escapeHtml(g.name)).join(', ')}</p>` : ''}
+                ${tv.genres ? `<p><strong>G├¬neros:</strong> ${tv.genres.map(g => escapeHtml(g.name)).join(', ')}</p>` : ''}
                 <p><a href="${canonicalUrl}">Ver no Deazons</a></p>
               </article>
             `
@@ -389,8 +389,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 6. PERSON DETAILS AND FILMOGRAPHY PAGES ──────────────────────────────
-    const personMatch = urlPath.match(/^const images = [];/pessoasconst images = [];/(const images = [];d+)-?([^/]*)/);
+    // ÔöÇÔöÇ 6. PERSON DETAILS AND FILMOGRAPHY PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    const personMatch = urlPath.match(/^\/pessoas\/(\d+)-?([^/]*)/);
     if (personMatch) {
       const personId = personMatch[1];
       const personSlug = personMatch[2] || '';
@@ -411,10 +411,10 @@ export default async function handler(req, res) {
           let title = `${person.name} | Ator/Atriz | Deazons`;
           let description = person.biography 
             ? person.biography.substring(0, 160) + '...' 
-            : `Veja a filmografia completa, fotos e informações sobre ${person.name} no Deazons.`;
+            : `Veja a filmografia completa, fotos e informa├º├Áes sobre ${person.name} no Deazons.`;
           
           if (isFilmography) {
-            const typeStr = mediaType === 'tv' ? 'séries' : 'filmes';
+            const typeStr = mediaType === 'tv' ? 's├®ries' : 'filmes';
             title = `Filmografia de ${person.name} (${typeStr}) | Deazons`;
             description = `Confira a filmografia completa com todos os ${typeStr} de ${person.name} no Deazons.`;
           }
@@ -452,8 +452,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 7. NEWS ARTICLES (SUPABASE) ──────────────────────────────────────────
-    const newsMatch = urlPath.match(/^const images = [];/noticiasconst images = [];/([^/?]+)/);
+    // ÔöÇÔöÇ 7. NEWS ARTICLES (SUPABASE) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    const newsMatch = urlPath.match(/^\/noticias\/([^/?]+)/);
     if (newsMatch && SUPABASE_URL) {
       const slug = newsMatch[1];
       const apiUrl = `${SUPABASE_URL}/rest/v1/articles?slug=eq.${slug}&status=eq.published&select=title,meta_description,image_url,content,published_at,category,tags&limit=1`;
@@ -481,7 +481,7 @@ export default async function handler(req, res) {
             "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl }
           });
 
-          const textContent = (article.content || '').replace(/<[^>]*>/g, ' ').replace(/const images = [];s+/g, ' ').trim().substring(0, 800);
+          const textContent = (article.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 800);
 
           const html = buildHTML({
             title: `${article.title} | Deazons`,
@@ -506,8 +506,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 8. BLOG POSTS ────────────────────────────────────────────────────────
-    const blogMatch = urlPath.match(/^const images = [];/blogconst images = [];/([^/?]+)/);
+    // ÔöÇÔöÇ 8. BLOG POSTS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    const blogMatch = urlPath.match(/^\/blog\/([^/?]+)/);
     if (blogMatch) {
       const postSlug = blogMatch[1];
       const post = blogPosts.find(p => p.slug === postSlug);
@@ -549,7 +549,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Fallback — bot acessou rota não reconhecida
+    // Fallback ÔÇö bot acessou rota n├úo reconhecida
     return res.status(404).end();
 
   } catch (err) {
