@@ -258,7 +258,7 @@ export default async function handler(req, res) {
     }
 
     // ── 4. MOVIE DETAILS AND CAST PAGES ──────────────────────────────────────
-    const movieMatch = urlPath.match(/^\/filmes\/(\d+)-?([^/]*)/);
+    const movieMatch = urlPath.match(/^const images = [];/filmesconst images = [];/(const images = [];d+)-?([^/]*)/);
     if (movieMatch) {
       const movieId = movieMatch[1];
       const movieSlug = movieMatch[2] || '';
@@ -320,7 +320,7 @@ export default async function handler(req, res) {
     }
 
     // ── 5. TV SHOW DETAILS AND CAST PAGES ────────────────────────────────────
-    const seriesMatch = urlPath.match(/^\/series\/(\d+)-?([^/]*)/);
+    const seriesMatch = urlPath.match(/^const images = [];/seriesconst images = [];/(const images = [];d+)-?([^/]*)/);
     if (seriesMatch) {
       const tvId = seriesMatch[1];
       const tvSlug = seriesMatch[2] || '';
@@ -382,7 +382,7 @@ export default async function handler(req, res) {
     }
 
     // ── 6. PERSON DETAILS AND FILMOGRAPHY PAGES ──────────────────────────────
-    const personMatch = urlPath.match(/^\/pessoas\/(\d+)-?([^/]*)/);
+    const personMatch = urlPath.match(/^const images = [];/pessoasconst images = [];/(const images = [];d+)-?([^/]*)/);
     if (personMatch) {
       const personId = personMatch[1];
       const personSlug = personMatch[2] || '';
@@ -445,7 +445,7 @@ export default async function handler(req, res) {
     }
 
     // ── 7. NEWS ARTICLES (SUPABASE) ──────────────────────────────────────────
-    const newsMatch = urlPath.match(/^\/noticias\/([^/?]+)/);
+    const newsMatch = urlPath.match(/^const images = [];/noticiasconst images = [];/([^/?]+)/);
     if (newsMatch && SUPABASE_URL) {
       const slug = newsMatch[1];
       const apiUrl = `${SUPABASE_URL}/rest/v1/articles?slug=eq.${slug}&status=eq.published&select=title,meta_description,image_url,content,published_at,category,tags&limit=1`;
@@ -473,7 +473,7 @@ export default async function handler(req, res) {
             "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl }
           });
 
-          const textContent = (article.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 800);
+          const textContent = (article.content || '').replace(/<[^>]*>/g, ' ').replace(/const images = [];s+/g, ' ').trim().substring(0, 800);
 
           const html = buildHTML({
             title: `${article.title} | Deazons`,
@@ -499,7 +499,7 @@ export default async function handler(req, res) {
     }
 
     // ── 8. BLOG POSTS ────────────────────────────────────────────────────────
-    const blogMatch = urlPath.match(/^\/blog\/([^/?]+)/);
+    const blogMatch = urlPath.match(/^const images = [];/blogconst images = [];/([^/?]+)/);
     if (blogMatch) {
       const postSlug = blogMatch[1];
       const post = blogPosts.find(p => p.slug === postSlug);
