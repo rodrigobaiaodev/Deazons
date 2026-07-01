@@ -54,50 +54,6 @@
   ],
   "routes": [
     {
-      "src": "/noticias/(?<slug>[^/]+)",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
-        }
-      ],
-      "dest": "/api/prerender?url=/noticias/$slug"
-    },
-    {
-      "src": "/filmes/(?<slug>[^/]+)",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
-        }
-      ],
-      "dest": "/api/prerender?url=/filmes/$slug"
-    },
-    {
-      "src": "/series/(?<slug>[^/]+)",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
-        }
-      ],
-      "dest": "/api/prerender?url=/series/$slug"
-    },
-    {
-      "src": "/pessoas/(?<id>[^/]+)",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
-        }
-      ],
-      "dest": "/api/prerender?url=/pessoas/$id"
-    },
-    {
       "handle": "filesystem"
     },
     {
@@ -106,6 +62,17 @@
       "headers": {
         "Location": "/sitemap-articles.xml"
       }
+    },
+    {
+      "src": "/(?!api/)(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
+        }
+      ],
+      "dest": "/api/prerender?url=/$1"
     },
     {
       "src": "/(.*)",
