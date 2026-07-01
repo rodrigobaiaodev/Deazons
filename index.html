@@ -3,12 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Deploy ID — updated on each build to bust CDN edge cache -->
+    <meta name="deploy-id" content="2026-07-01T21:33" />
 
     <!--
       NOTE: title, description, canonical, og:*, twitter:* are injected
       dynamically per-page by the <SeoHead> component (react-helmet-async).
       DO NOT add hardcoded canonical or duplicate meta tags here.
     -->
+
+    <!-- Baseline title + canonical for SPA shell (react-helmet-async overrides per page in the browser) -->
+    <title>Deazons | Filmes, Séries e Notícias de Entretenimento</title>
+    <link rel="canonical" href="https://deazons.com/" />
 
     <!-- Permanent / non-dynamic meta -->
     <meta name="author" content="Deazons" />

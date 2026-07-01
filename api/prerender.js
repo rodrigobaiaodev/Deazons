@@ -92,7 +92,11 @@ function escapeHtml(str = '') {
 export default async function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
   const parsedUrl = new URL(req.url, 'https://deazons.com');
-  
+
+  // Tell the CDN to cache SEPARATE responses for bot vs user agents.
+  // Without this, the CDN would serve the same cached prerender to normal users.
+  res.setHeader('Vary', 'User-Agent');
+
   // URL can come from ?url= parameter (due to Vercel rewrite) or directly from req.url
   let urlPath = parsedUrl.searchParams.get('url') || req.url || '/';
   
