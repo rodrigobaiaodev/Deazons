@@ -54,17 +54,7 @@
   ],
   "routes": [
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/api/sitemap-articles",
-      "status": 308,
-      "headers": {
-        "Location": "/sitemap-articles.xml"
-      }
-    },
-    {
-      "src": "/(?!api/)(.*)",
+      "src": "/(?!api/)(?!assets/)(?!.*\\.(?:js|css|woff2?|ttf|eot|ico|png|jpg|jpeg|svg|webp|gif))(.*)",
       "has": [
         {
           "type": "header",
@@ -73,6 +63,16 @@
         }
       ],
       "dest": "/api/prerender?url=/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/api/sitemap-articles",
+      "status": 308,
+      "headers": {
+        "Location": "/sitemap-articles.xml"
+      }
     },
     {
       "src": "/(.*)",
