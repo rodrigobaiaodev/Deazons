@@ -7,8 +7,16 @@
  * Esta função é chamada pelo vercel.json para rotas específicas.
  */
 
-import { blogPosts } from '../src/blog/data/posts.ts';
-import imagesData from '../src/blog/data/images.json' with { type: 'json' };
+import { blogPosts } from '../src/blog/data/posts.js';
+import * as fs from 'fs';
+import * as path from 'path';
+
+let imagesData = {};
+try {
+  imagesData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/blog/data/images.json'), 'utf-8'));
+} catch (e) {
+  console.warn('Could not load images.json', e);
+}
 
 const BOT_REGEX = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|sogou|ia_archiver|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot/i;
 

@@ -1,21 +1,4 @@
-export interface PexelsImage {
-  url: string;
-  alt: string;
-  photographer: string;
-  photographer_url: string;
-}
-
-export interface BlogPostMeta {
-  slug: string;
-  title: string;
-  description: string;
-  searchQuery: string; // The query to search on Pexels for images
-  images: PexelsImage[]; // Will be populated by the pexels script
-  publishedAt: string;
-  componentName: string; // Name of the React component that renders the content
-}
-
-export const blogPosts: BlogPostMeta[] = [
+export const blogPosts = [
   {
     slug: "netflix-vs-prime-video-vs-disney-plus",
     title: "Netflix vs Prime Video vs Disney+: Qual Assinar em 2025?",

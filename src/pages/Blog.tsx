@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { blogPosts, BlogPostMeta } from "@/blog/data/posts";
+import { blogPosts } from "@/blog/data/posts";
+import { BlogPostMeta } from "@/blog/data/types";
 import SeoHead from "@/components/SeoHead";
 import { Input } from "@/components/ui/input";
 import { CalendarDays, Search as SearchIcon } from "lucide-react";

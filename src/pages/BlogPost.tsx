@@ -1,6 +1,7 @@
 import { useEffect, useState, Suspense, lazy } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { blogPosts, BlogPostMeta } from "@/blog/data/posts";
+import { blogPosts } from "@/blog/data/posts";
+import { BlogPostMeta } from "@/blog/data/types";
 import SeoHead from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, CalendarDays, Share2 } from "lucide-react";
