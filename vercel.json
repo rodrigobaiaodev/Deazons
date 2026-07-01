@@ -54,7 +54,7 @@
   ],
   "routes": [
     {
-      "src": "/(?!api/)(?!assets/)(?!.*\\.(?:js|css|woff2?|ttf|eot|ico|png|jpg|jpeg|svg|webp|gif))(.*)",
+      "src": "/(?!api/)(?!assets/)(?!.*\\.(?:js|css|woff2?|ttf|eot|ico|png|jpg|jpeg|svg|webp|gif|xml|txt|json))(.*)",
       "has": [
         {
           "type": "header",
