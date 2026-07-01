@@ -46,7 +46,7 @@
       ]
     },
     {
-      "source": "/(?!api/)(?!assets/)(?!.*\\.(js|css|woff2?|ttf|eot|ico|png|jpg|jpeg|svg|webp|gif|xml|txt|json))(.*)",
+      "source": "/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|atores(?:/.*)?|search(?:/.*)?|sobre|privacidade|termos)?",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
         { "key": "Vary", "value": "User-Agent" }
@@ -55,12 +55,12 @@
   ],
   "routes": [
     {
-      "src": "/(?!api/)(?!assets/)(?!.*\\.(?:js|css|woff2?|ttf|eot|ico|png|jpg|jpeg|svg|webp|gif|xml|txt|json))(.*)",
+      "src": "/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|atores(?:/.*)?|search(?:/.*)?|sobre|privacidade|termos)?",
       "has": [
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot).*"
+          "value": "(?i).*(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot).*"
         }
       ],
       "dest": "/api/prerender?url=/$1"
