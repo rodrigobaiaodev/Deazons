@@ -46,7 +46,7 @@
       ]
     },
     {
-      "source": "/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|atores(?:/.*)?|search(?:/.*)?|sobre|privacidade|termos)?",
+      "source": "/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|atores(?:/.*)?|pessoas(?:/.*)?|noticias(?:/.*)?|search(?:/.*)?|sobre|privacidade|termos|contato)?",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" },
         { "key": "Vary", "value": "User-Agent" }
@@ -55,7 +55,7 @@
   ],
   "routes": [
     {
-      "src": "/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|atores(?:/.*)?|search(?:/.*)?|sobre|privacidade|termos)?",
+      "src": "^/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|atores(?:/.*)?|pessoas(?:/.*)?|noticias(?:/.*)?|search(?:/.*)?|sobre|privacidade|termos|contato)?$",
       "has": [
         {
           "type": "header",
