@@ -18,7 +18,7 @@ try {
   console.warn('Could not load images.json', e);
 }
 
-const BOT_REGEX = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|sogou|ia_archiver|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot/i;
+const BOT_REGEX = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|sogou|ia_archiver|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|mediapartners-google/i;
 
 // Cache in-memory para chamadas TMDB
 const tmdbCache = new Map();

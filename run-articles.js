@@ -36,7 +36,7 @@ if (!SUPABASE_URL || !SERVICE_KEY || !GROQ_KEY) {
   process.exit(1);
 }
 
-const MAX_PER_RUN   = 5; // Reduzido para 5 para focar em artigos maiores
+const MAX_PER_RUN   = process.env.MAX_PER_RUN ? parseInt(process.env.MAX_PER_RUN, 10) : 4;
 const DELAY_MS      = 12000; 
 
 // ── RSS Parser ────────────────────────────────────────────────────────────────
@@ -64,12 +64,22 @@ function parseRss(xml) {
     let img = getAttr('media:content', 'url') || getAttr('enclosure', 'url');
     if (!img) { const x = content.match(/<img[^>]+src=["']([^"']+)["']/i); if (x) img = x[1]; }
     
+    const extraImages = [];
+    const allImgsRx = /<img[^>]+src=["']([^"']+)["']/gi;
+    let imgM;
+    while ((imgM = allImgsRx.exec(content)) !== null) {
+      if (!imgM[1].includes('youtube') && !imgM[1].includes('iframe') && !imgM[1].includes('embed')) {
+        extraImages.push(imgM[1]);
+      }
+    }
+    const uniqueImages = [...new Set(extraImages)];
+    
     // Ignorar iframes ou vídeos (YouTube etc)
     if (img && (img.includes('youtube') || img.includes('embed') || img.includes('iframe'))) {
       img = null;
     }
     
-    items.push({ title, link, content, img });
+    items.push({ title, link, content, img, extraImages: uniqueImages });
   }
   return items;
 }
@@ -127,10 +137,11 @@ async function callGroq(prompt) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.8, // Mais criatividade
-        max_tokens: 6500,
+        temperature: 0.8,
+        max_tokens: 4000,
+        response_format: { type: 'json_object' }
       }),
     });
 
@@ -170,7 +181,7 @@ function parseJSON(text) {
 
 // ── Prompt Extenso e Detalhado ────────────────────────────────────────────────
 function buildPrompt(title, rawContent) {
-  const content = rawContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2500);
+  const content = rawContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1500);
 
   return `Você é um redator sênior do portal brasileiro "Deazons" (especializado em cultura pop, cinema e séries). 
 Seu objetivo é escrever um artigo ÉPICO, PROFUNDO e EXTREMAMENTE ENVOLVENTE (aprovado para Google AdSense).
@@ -178,12 +189,13 @@ Seu objetivo é escrever um artigo ÉPICO, PROFUNDO e EXTREMAMENTE ENVOLVENTE (a
 A fonte original (veja abaixo) deve ser APENAS o ponto de partida. Você deve REESCREVER TOTALMENTE o texto, EXPANDINDO o assunto de forma autoral, detalhada, rica em contexto e análises críticas. NÃO traduza ou copie; seja criativo!
 
 REGRAS OBRIGATÓRIAS DO ARTIGO:
-1. Tamanho: o artigo DEVE ter pelo menos 10 parágrafos extensos e profundos. É proibido gerar textos curtos ou resumos rasos.
-2. Estrutura rica: use pelo menos 5 subtítulos <h2> envolventes.
-3. Formatação: inclua pelo menos 1 <blockquote> (citação de personagem, crítica ou impacto cultural), 1 <ul> (lista de curiosidades ou pontos chave) e destaque partes importantes em <strong>.
-4. NUNCA coloque tags de imagem (<img>) no texto gerado.
-5. NUNCA mencione que a notícia veio de um site ou "fonte original". Haja como se o Deazons tivesse feito a análise primária.
-6. A linguagem deve ser de revista especializada, mantendo o usuário engajado do começo ao fim.
+1. Tamanho: o artigo DEVE ser MASSIVO, com pelo menos 15 parágrafos extensos, análises profundas e MAIS DE 1000 PALAVRAS REAIS. É estritamente proibido gerar textos curtos ou resumos rasos. Aprofunde a análise o máximo possível, trazendo contexto, histórico e opiniões fortes.
+2. Estrutura SEO: use uma hierarquia perfeita com introdução, múltiplos subtítulos <h2> e <h3> envolventes, e uma conclusão forte. O Google ama essa estrutura.
+3. Formatação: inclua pelo menos 1 <blockquote> (citação de personagem ou crítica), 1 <ul> (lista de curiosidades ou pontos chave) e destaque partes importantes em <strong>.
+4. Links Internos: Inclua pelo menos 2 links internos naturais usando a tag <a href="/noticias">leia mais notícias aqui</a> ou <a href="/filmes">veja nossa seção de filmes</a>, espalhados pelo texto.
+5. NUNCA coloque tags de imagem (<img>) no texto gerado (nós injetamos via script).
+6. NUNCA mencione que a notícia veio de um site ou "fonte original". Haja como se o Deazons tivesse feito a análise primária.
+7. A linguagem deve ser de revista especializada, mantendo o usuário engajado do começo ao fim.
 
 Retorne APENAS um JSON estrito, sem markdown, no formato:
 {
@@ -201,7 +213,7 @@ Rascunho de Informações: ${content}`;
 }
 
 // ── Injeção de Imagens ────────────────────────────────────────────────────────
-function injectImages(html, mainImg, posterImg, alt) {
+function injectImages(html, mainImg, posterImg, alt, extraImages = []) {
   let c = html.replace(/<img[^>]*>/gi, '').replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '').trim();
 
   // Imagem de destaque logo após o primeiro parágrafo
@@ -217,14 +229,29 @@ function injectImages(html, mainImg, posterImg, alt) {
     c = cover + '\n' + c;
   }
 
-  // Poster no meio (após o 3º h2 se disponível)
-  if (posterImg && posterImg !== mainImg) {
-    let cnt = 0;
-    c = c.replace(/<h2/gi, m => { 
-      cnt++; 
-      return cnt === 3 ? `<figure style="margin: 3rem 0;"><img src="${posterImg}" alt="${alt} Poster" style="width:100%; max-width: 500px; margin: 0 auto; display: block; border-radius:12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);"/></figure>\n${m}` : m; 
-    });
-  }
+  let imgIndex = 0;
+  let cnt = 0;
+  
+  c = c.replace(/<h2/gi, m => { 
+    cnt++; 
+    let extra = '';
+    
+    // Poster no 3º H2
+    if (cnt === 3 && posterImg && posterImg !== mainImg) {
+      extra = `<figure style="margin: 3rem 0;"><img src="${posterImg}" alt="${alt} Poster" style="width:100%; max-width: 500px; margin: 0 auto; display: block; border-radius:12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);"/></figure>\n`;
+    } 
+    // Imagens extras nos H2 ímpares após o 3º
+    else if (cnt > 3 && cnt % 2 !== 0 && imgIndex < extraImages.length) {
+      let currentExtra = extraImages[imgIndex];
+      // Ignora se for duplicada da principal
+      if (currentExtra !== mainImg && currentExtra !== posterImg) {
+        extra = `<figure style="margin: 3rem 0;"><img src="${currentExtra}" alt="${alt} - Cena" style="width:100%; max-width: 800px; margin: 0 auto; display: block; border-radius:12px;"/></figure>\n`;
+      }
+      imgIndex++;
+    }
+    
+    return extra + m; 
+  });
 
   return c;
 }
@@ -239,6 +266,9 @@ async function main() {
 
   const sources = await sbGet('rss_sources?active=eq.true&select=*');
   if (!sources.length) return console.log('Nenhum feed ativo.');
+  
+  // Misturar feeds para não pegar sempre do mesmo
+  sources.sort(() => Math.random() - 0.5);
 
   let created = 0;
 
@@ -287,7 +317,7 @@ async function main() {
       const wc = wordCount(data.content);
       console.log(`  📝 Qualidade: ${wc} palavras geradas`);
 
-      const content = injectImages(data.content, mainImg, posterImg, data.title || title);
+      const content = injectImages(data.content, mainImg, posterImg, data.title || title, item.extraImages);
       const slug    = slugify(data.slug || data.title || title);
 
       const ok = await sbPost('articles', {
