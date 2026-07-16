@@ -153,9 +153,8 @@ Disallow: /admin/
 Disallow: /api/
 Disallow: /pesquisa
 
-# Sitemaps — todos listados para o Googlebot
+# Sitemaps — entrada principal
 Sitemap: ${BASE_URL}/sitemap.xml
-Sitemap: ${BASE_URL}/sitemap-index.xml
 Sitemap: ${BASE_URL}/sitemap-pages.xml
 Sitemap: ${BASE_URL}/sitemap-articles.xml
 Sitemap: ${BASE_URL}/sitemap-blog.xml
@@ -164,7 +163,7 @@ Sitemap: ${BASE_URL}/sitemap-series.xml
 Sitemap: ${BASE_URL}/sitemap-people.xml
 `;
   fs.writeFileSync(path.join(PUBLIC_DIR, 'robots.txt'), content, 'utf8');
-  console.log('✅ robots.txt atualizado com todos os sitemaps listados');
+  console.log('✅ robots.txt atualizado com o sitemap principal');
 }
 
 // ── Gera sitemap-index.xml atualizado ────────────────────────────────────────
