@@ -1,9 +1,9 @@
 /**
- * run-articles.js  — v4 (AdSense Ready, Alta Qualidade)
+ * run-articles.js  — v5 (Paráfrase com Linkagem Interna, AdSense Ready)
  * 
- * Busca feeds RSS ativos do Supabase, reescreve com Groq (llama-3.3-70b)
- * gerando artigos MASSIVOS (1500+ palavras), originais e otimizados para SEO.
- * Injeta imagens do TMDB e salva no Supabase.
+ * Busca feeds RSS ativos do Supabase, parafraseia com Groq (llama-3.3-70b)
+ * preservando estrutura HTML original (imagens, links internos), sem links externos.
+ * Publica 1 artigo por execução (5 artigos/dia via cron).
  *
  * Uso: node run-articles.js
  */
@@ -36,8 +36,8 @@ if (!SUPABASE_URL || !SERVICE_KEY || !GROQ_KEY) {
   process.exit(1);
 }
 
-const MAX_PER_RUN   = process.env.MAX_PER_RUN ? parseInt(process.env.MAX_PER_RUN, 10) : 4;
-const DELAY_MS      = 12000; 
+const MAX_PER_RUN   = process.env.MAX_PER_RUN ? parseInt(process.env.MAX_PER_RUN, 10) : 1;
+const DELAY_MS      = 5000; 
 
 // ── RSS Parser ────────────────────────────────────────────────────────────────
 function parseRss(xml) {
@@ -137,9 +137,9 @@ async function callGroq(prompt) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.8,
+        temperature: 0.6,
         max_tokens: 4000,
         response_format: { type: 'json_object' }
       }),
@@ -179,81 +179,75 @@ function parseJSON(text) {
   try { return JSON.parse(clean.slice(start, end + 1)); } catch (_) { return null; }
 }
 
-// ── Prompt Extenso e Detalhado ────────────────────────────────────────────────
+// ── Links internos (AdSense-friendly) ────────────────────────────────────────────
+const INTERNAL_LINKS = [
+  { href: '/noticias', label: 'mais notícias de cinema e séries' },
+  { href: '/filmes',   label: 'filmes em destaque' },
+  { href: '/series',   label: 'séries imperdíveis' },
+  { href: '/blog',     label: 'nosso blog de cultura pop' },
+  { href: '/noticias', label: 'últimas notícias do mundo do entretenimento' },
+];
+
+function pickInternalLinks() {
+  const shuffled = [...INTERNAL_LINKS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 2);
+}
+
+// ── Prompt: Parafrasear mantendo estrutura HTML original ──────────────────────
 function buildPrompt(title, rawContent) {
-  const content = rawContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1500);
+  const originalHtml = rawContent.trim().slice(0, 4000);
+  const [link1, link2] = pickInternalLinks();
 
-  return `Você é um redator sênior do portal brasileiro "Deazons" (especializado em cultura pop, cinema e séries). 
-Seu objetivo é escrever um artigo ÉPICO, PROFUNDO e EXTREMAMENTE ENVOLVENTE (aprovado para Google AdSense).
+  return `Você é um editor do portal brasileiro "Deazons" (especializado em cultura pop, cinema e séries).
+Sua tarefa é PARAFRASEAR o artigo HTML abaixo substituindo palavras por sinônimos equivalentes em português brasileiro, SEM alterar o sentido e SEM inventar informações.
 
-A fonte original (veja abaixo) deve ser APENAS o ponto de partida. Você deve REESCREVER TOTALMENTE o texto, EXPANDINDO o assunto de forma autoral, detalhada, rica em contexto e análises críticas. NÃO traduza ou copie; seja criativo!
+REGRAS ABSOLUTAS — siga TODAS rigorosamente:
+1. PRESERVE TODO O HTML INTACTO: mantenha tags <img>, <figure>, <blockquote>, <ul>, <li>, <h2>, <h3>, <p>, <strong>, <em> exatamente como no original.
+2. PRESERVE todos os atributos src, alt, class, style das imagens — não altere URLs de imagens.
+3. REMOVA todos os links externos (<a href> apontando para outros domínios) — substitua pelo texto âncora simples (sem tag <a>).
+4. ADICIONE exatamente 2 links internos naturais no corpo do texto, nas posições onde façam sentido contextual:
+   - Link A: <a href="${link1.href}">${link1.label}</a>
+   - Link B: <a href="${link2.href}">${link2.label}</a>
+5. APENAS substitua o TEXTO VISÍVEL por sinônimos naturais. Não invente fatos novos.
+6. Mantenha o mesmo tom, estrutura e tamanho do original.
+7. O título pode ser levemente reescrito para ficar mais chamativo, mas deve manter o mesmo sentido.
+8. NÃO adicione seções ou parágrafos que não existiam no original.
+9. NÃO inclua o <h1> no campo "content" (ele é renderizado separadamente no site).
 
-REGRAS OBRIGATÓRIAS DO ARTIGO:
-1. Tamanho: o artigo DEVE ser MASSIVO, com pelo menos 15 parágrafos extensos, análises profundas e MAIS DE 1000 PALAVRAS REAIS. É estritamente proibido gerar textos curtos ou resumos rasos. Aprofunde a análise o máximo possível, trazendo contexto, histórico e opiniões fortes.
-2. Estrutura SEO: use uma hierarquia perfeita com introdução, múltiplos subtítulos <h2> e <h3> envolventes, e uma conclusão forte. O Google ama essa estrutura.
-3. Formatação: inclua pelo menos 1 <blockquote> (citação de personagem ou crítica), 1 <ul> (lista de curiosidades ou pontos chave) e destaque partes importantes em <strong>.
-4. Links Internos: Inclua pelo menos 2 links internos naturais usando a tag <a href="/noticias">leia mais notícias aqui</a> ou <a href="/filmes">veja nossa seção de filmes</a>, espalhados pelo texto.
-5. NUNCA coloque tags de imagem (<img>) no texto gerado (nós injetamos via script).
-6. NUNCA mencione que a notícia veio de um site ou "fonte original". Haja como se o Deazons tivesse feito a análise primária.
-7. A linguagem deve ser de revista especializada, mantendo o usuário engajado do começo ao fim.
-
-Retorne APENAS um JSON estrito, sem markdown, no formato:
+Retorne APENAS um JSON válido, sem markdown, sem blocos de código, no formato:
 {
-  "title": "Crie um título novo, altamente chamativo (clickbait do bem), intrigante e com pegada SEO",
-  "slug": "crie-um-slug-em-minusculas-separado-por-hifen",
-  "meta_description": "Crie uma descrição intrigante e instigante de 150 caracteres para chamar o leitor do Google.",
-  "tags": ["3 a 5 tags focadas (ex: Filme X, Diretor Y, Netflix)"],
-  "category": "Escolha exatamente uma: Cinema OU Séries OU Cultura Pop",
-  "content": "<p>Seu primeiro parágrafo envolvente aqui...</p><h2>Subtítulo envolvente</h2><p>Restante do artigo profundo e expansivo...</p>"
+  "title": "Título parafraseado e levemente mais chamativo",
+  "slug": "titulo-em-kebab-case-sem-acentos",
+  "meta_description": "Descrição de 150-160 caracteres baseada no artigo original.",
+  "tags": ["tag1", "tag2", "tag3"],
+  "category": "Escolha exatamente uma: Cinema | Séries | Marvel | DC | Lançamentos | Cultura Pop | Streaming | Anime",
+  "content": "<p>HTML parafraseado com links internos inseridos...</p>"
 }
 
-Assunto Base para o seu artigo:
+ARTIGO ORIGINAL PARA PARAFRASEAR:
 Título: ${title}
-Rascunho de Informações: ${content}`;
+Conteúdo HTML: ${originalHtml}`;
 }
 
-// ── Injeção de Imagens ────────────────────────────────────────────────────────
-function injectImages(html, mainImg, posterImg, alt, extraImages = []) {
-  let c = html.replace(/<img[^>]*>/gi, '').replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '').trim();
-
-  // Imagem de destaque logo após o primeiro parágrafo
+// ── Injeção da Imagem de Capa (mantém imagens internas do HTML original) ──────
+function injectCoverImage(html, mainImg, alt) {
+  // NÃO remove imagens internas do HTML — elas vieram do feed original
+  // Apenas injeta a imagem de capa (TMDB ou do próprio feed) após o 1º parágrafo
   const cover = `<figure style="margin: 0 0 2.5rem 0;">
   <img src="${mainImg}" alt="${alt}" style="width:100%; border-radius:16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
 </figure>`;
 
-  // Achar o primeiro </p>
-  const firstP = c.indexOf('</p>');
-  if (firstP !== -1) {
-    c = c.substring(0, firstP + 4) + '\n' + cover + '\n' + c.substring(firstP + 4);
-  } else {
-    c = cover + '\n' + c;
+  // Verifica se o HTML já tem uma imagem de capa (src igual ao mainImg)
+  if (html.includes(mainImg)) {
+    // Imagem já está no conteúdo, não duplica
+    return html;
   }
 
-  let imgIndex = 0;
-  let cnt = 0;
-  
-  c = c.replace(/<h2/gi, m => { 
-    cnt++; 
-    let extra = '';
-    
-    // Poster no 3º H2
-    if (cnt === 3 && posterImg && posterImg !== mainImg) {
-      extra = `<figure style="margin: 3rem 0;"><img src="${posterImg}" alt="${alt} Poster" style="width:100%; max-width: 500px; margin: 0 auto; display: block; border-radius:12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);"/></figure>\n`;
-    } 
-    // Imagens extras nos H2 ímpares após o 3º
-    else if (cnt > 3 && cnt % 2 !== 0 && imgIndex < extraImages.length) {
-      let currentExtra = extraImages[imgIndex];
-      // Ignora se for duplicada da principal
-      if (currentExtra !== mainImg && currentExtra !== posterImg) {
-        extra = `<figure style="margin: 3rem 0;"><img src="${currentExtra}" alt="${alt} - Cena" style="width:100%; max-width: 800px; margin: 0 auto; display: block; border-radius:12px;"/></figure>\n`;
-      }
-      imgIndex++;
-    }
-    
-    return extra + m; 
-  });
-
-  return c;
+  const firstP = html.indexOf('</p>');
+  if (firstP !== -1) {
+    return html.substring(0, firstP + 4) + '\n' + cover + '\n' + html.substring(firstP + 4);
+  }
+  return cover + '\n' + html;
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -296,9 +290,8 @@ async function main() {
 
       console.log(`\n  [${created + 1}/${MAX_PER_RUN}] Em Análise: ${title.slice(0, 70)}`);
 
-      const tmdb = await getTMDB(title);
-      const mainImg   = tmdb?.main   || item.img || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1280&auto=format&fit=crop';
-      const posterImg = tmdb?.poster || null;
+      const tmdb    = await getTMDB(title);
+      const mainImg = tmdb?.main || item.img || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1280&auto=format&fit=crop';
 
       let data;
       try {
@@ -317,7 +310,7 @@ async function main() {
       const wc = wordCount(data.content);
       console.log(`  📝 Qualidade: ${wc} palavras geradas`);
 
-      const content = injectImages(data.content, mainImg, posterImg, data.title || title, item.extraImages);
+      const content = injectCoverImage(data.content, mainImg, data.title || title);
       const slug    = slugify(data.slug || data.title || title);
 
       const ok = await sbPost('articles', {

@@ -2,15 +2,16 @@
  * api/cron-articles.js
  * Vercel Serverless Function acionada pelo Vercel Cron Jobs (vercel.json)
  *
- * Roda todos os dias às 08:00 BRT (11:00 UTC).
- * Busca feeds RSS, reescreve até 10 artigos por dia com Gemini,
- * salva no Supabase e atualiza o sitemap-articles.xml automaticamente.
+ * Executa 5x por dia (a cada ~4h): 07h, 11h, 15h, 19h, 23h BRT.
+ * Publica 1 artigo por execução → máximo de 5 artigos/dia.
+ * Artigos parafraseados do RSS com linkagem interna (política AdSense).
  *
- * Variáveis de ambiente necessárias (já existentes):
+ * Variáveis de ambiente necessárias:
  *   VITE_SUPABASE_URL
  *   VITE_SUPABASE_SERVICE_ROLE_KEY
  *   GROQ_API_KEY
  *   VITE_TMDB_API_KEY
+ *   CRON_SECRET
  */
 
 const parseRssXml = (xmlStr) => {
@@ -70,7 +71,7 @@ const parseRssXml = (xmlStr) => {
   }
   return items;
 };
-const MAX_ARTICLES_PER_RUN = 10;
+const MAX_ARTICLES_PER_RUN = 1;       // 1 artigo por execução — cron roda 5x/dia
 const DELAY_BETWEEN_ARTICLES_MS = 3000; // 3s para rate limit do Groq
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -131,32 +132,55 @@ function stripImagesFromContent(html) {
     .trim();
 }
 
-function buildAIPrompt(title, rawContent, imageUrl) {
-  return `Você é um redator sênior do portal de entretenimento "Deazons" (Brasil).
-Reescreva o artigo abaixo em português brasileiro de forma 100% original, autoritativa e otimizada para SEO e AdSense.
+// Links internos do site para usar no conteúdo (AdSense-friendly)
+const INTERNAL_LINKS = [
+  { href: '/noticias',       label: 'mais notícias de cinema e séries' },
+  { href: '/filmes',         label: 'filmes em destaque' },
+  { href: '/series',         label: 'séries imperdíveis' },
+  { href: '/blog',           label: 'nosso blog de cultura pop' },
+  { href: '/noticias',       label: 'últimas notícias do mundo do entretenimento' },
+];
 
-REGRAS OBRIGATÓRIAS:
-1. Mínimo de 900 palavras. Expanda com contexto histórico, curiosidades, impacto cultural e perspectivas.
-2. Tom envolvente, opinativo e "nerd" profissional.
-3. Exatamente 4 subtítulos <h2> com palavras-chave relevantes.
-4. NÃO mencione o site de origem.
-5. NÃO inclua nenhuma tag <img> no conteúdo — apenas texto e H2.
-6. NÃO inclua o <h1> no campo "content" (ele é renderizado separadamente).
-7. A imagem de capa será exibida automaticamente pelo sistema — não a coloque no conteúdo.
+function pickInternalLinks() {
+  // Seleciona 2 links internos aleatórios distintos
+  const shuffled = [...INTERNAL_LINKS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 2);
+}
+
+function buildAIPrompt(title, rawContent) {
+  // Preserva o HTML original completo (com imagens, estrutura)
+  const originalHtml = rawContent.trim().substring(0, 4000);
+  const [link1, link2] = pickInternalLinks();
+
+  return `Você é um editor do portal brasileiro "Deazons" (especializado em cultura pop, cinema e séries).
+Sua tarefa é PARAFRASEAR o artigo HTML abaixo substituindo palavras por sinônimos equivalentes em português brasileiro, SEM alterar o sentido e SEM inventar informações.
+
+REGRAS ABSOLUTAS — siga TODAS rigorosamente:
+1. PRESERVE TODO O HTML INTACTO: mantenha tags <img>, <figure>, <blockquote>, <ul>, <li>, <h2>, <h3>, <p>, <strong>, <em> exatamente como no original.
+2. PRESERVE todos os atributos src, alt, class, style das imagens — não altere URLs de imagens.
+3. REMOVA todos os links externos (<a href> apontando para outros domínios) — substitua pelo texto âncora simples (sem tag <a>).
+4. ADICIONE exatamente 2 links internos naturais no corpo do texto, nas posições onde façam sentido contextual:
+   - Link A: <a href="${link1.href}">${link1.label}</a>
+   - Link B: <a href="${link2.href}">${link2.label}</a>
+5. APENAS substitua o TEXTO VISÍVEL por sinônimos naturais. Não invente fatos novos.
+6. Mantenha o mesmo tom, estrutura e tamanho do original.
+7. O título pode ser levemente reescrito para ficar mais chamativo, mas deve manter o mesmo sentido.
+8. NÃO adicione seções ou parágrafos que não existiam no original.
+9. NÃO inclua o <h1> no campo "content" (ele é renderizado separadamente no site).
 
 FORMATO DE RETORNO — responda APENAS com JSON válido (sem markdown, sem \`\`\`):
 {
-  "title": "Título reescrito e chamativo",
-  "slug": "titulo-em-kebab-case",
-  "meta_description": "Descrição entre 150-160 caracteres para SEO",
+  "title": "Título parafraseado e levemente mais chamativo",
+  "slug": "titulo-em-kebab-case-sem-acentos",
+  "meta_description": "Descrição de 150-160 caracteres baseada no artigo original.",
   "tags": ["tag1", "tag2", "tag3"],
   "category": "Uma de: Cinema, Séries, Marvel, DC, Lançamentos, Cultura Pop, Streaming, Anime",
-  "content": "<p>Introdução...</p><h2>Subtítulo 1</h2><p>Texto...</p><h2>Subtítulo 2</h2><p>Texto...</p><h2>Subtítulo 3</h2><p>Texto...</p><h2>Subtítulo 4</h2><p>Conclusão...</p>"
+  "content": "<p>HTML parafraseado com links internos inseridos...</p>"
 }
 
-NOTÍCIA ORIGINAL:
+ARTIGO ORIGINAL PARA PARAFRASEAR:
 Título: ${title}
-Conteúdo: ${rawContent.substring(0, 3000)}`;
+Conteúdo HTML: ${originalHtml}`;
 }
 
 // ─── Supabase helpers (usando fetch direto — sem SDK no server) ───────────────
@@ -355,7 +379,7 @@ export default async function handler(req, res) {
         }
 
         const rawContent = item.content || item.description || '';
-        const prompt = buildAIPrompt(item.title, rawContent, imageUrl);
+        const prompt = buildAIPrompt(item.title, rawContent);
 
         let articleData = null;
         try {
@@ -375,14 +399,24 @@ export default async function handler(req, res) {
           continue;
         }
 
-        // Limpar imagens do conteúdo (evita repetição)
-        const cleanContent = stripImagesFromContent(articleData.content || '');
+        // Preserva o HTML original (imagens, links) — apenas substitui sinônimos
+        // Injeta imagem de capa (TMDB) apenas se não estiver já no conteúdo
+        let finalContent = articleData.content || '';
+        if (imageUrl && !finalContent.includes(imageUrl)) {
+          const cover = `<figure style="margin: 0 0 2.5rem 0;"><img src="${imageUrl}" alt="${articleData.title || item.title}" style="width:100%; border-radius:16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" /></figure>`;
+          const firstP = finalContent.indexOf('</p>');
+          if (firstP !== -1) {
+            finalContent = finalContent.substring(0, firstP + 4) + '\n' + cover + '\n' + finalContent.substring(firstP + 4);
+          } else {
+            finalContent = cover + '\n' + finalContent;
+          }
+        }
         const finalSlug = slugify(articleData.slug || articleData.title || item.title);
 
         const newArticle = {
           title: articleData.title || item.title,
           slug: finalSlug,
-          content: cleanContent,
+          content: finalContent,
           meta_description: (articleData.meta_description || '').substring(0, 160),
           status: 'published',
           published_at: new Date().toISOString(),
