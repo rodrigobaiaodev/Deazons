@@ -22,7 +22,6 @@ import PersonFilmography from "./pages/PersonFilmography";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Contact from "./pages/Contact";
-import SitemapGenerator from "./components/SitemapGenerator";
 import NewsList from "./pages/NewsList";
 import NewsArticlePage from "./pages/NewsArticlePage";
 import AdminRSS from "./pages/AdminRSS";
@@ -46,7 +45,6 @@ const App = () => (
       <Sonner position="top-right" />
       <BrowserRouter>
         <ScrollToTop />
-        <SitemapGenerator />
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />

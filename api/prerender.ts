@@ -324,6 +324,16 @@ export default async function handler(req, res) {
         }
       } catch (err) {
         console.error(`Error fetching movie ${movieId}:`, err);
+        // Fallback: serve minimal HTML so Googlebot never receives a 404 for a known URL
+        const html = buildHTML({
+          title: `Filme | Deazons`,
+          description: `Veja detalhes, elenco e onde assistir a este filme no Deazons.`,
+          canonicalUrl: `https://deazons.com${urlPath}`,
+          bodyContent: `<h1>Filme | Deazons</h1><p>Veja detalhes, elenco e onde assistir a este filme no Deazons.</p>`
+        });
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 's-maxage=300');
+        return res.status(200).send(html);
       }
     }
 
@@ -386,6 +396,16 @@ export default async function handler(req, res) {
         }
       } catch (err) {
         console.error(`Error fetching tv ${tvId}:`, err);
+        // Fallback: serve minimal HTML so Googlebot never receives a 404 for a known URL
+        const html = buildHTML({
+          title: `Série | Deazons`,
+          description: `Veja detalhes, elenco e onde assistir a esta série no Deazons.`,
+          canonicalUrl: `https://deazons.com${urlPath}`,
+          bodyContent: `<h1>Série | Deazons</h1><p>Veja detalhes, elenco e onde assistir a esta série no Deazons.</p>`
+        });
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 's-maxage=300');
+        return res.status(200).send(html);
       }
     }
 
@@ -450,69 +470,98 @@ export default async function handler(req, res) {
       } catch (err) {
         console.error(`Error fetching person ${personId}:`, err);
       }
+      // Fallback: serve minimal HTML so Googlebot never receives a 404 for a known URL
+      const html = buildHTML({
+        title: `Pessoa | Deazons`,
+        description: `Veja a filmografia completa e informações sobre esta pessoa no Deazons.`,
+        canonicalUrl: `https://deazons.com${urlPath}`,
+        bodyContent: `<h1>Pessoa | Deazons</h1><p>Veja a filmografia completa e informações no Deazons.</p>`
+      });
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 's-maxage=300');
+      return res.status(200).send(html);
     }
 
-    // ÔöÇÔöÇ 7. NEWS ARTICLES (SUPABASE) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    // ── 7. NEWS ARTICLES (SUPABASE) ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     const newsMatch = urlPath.match(/^\/noticias\/([^/?]+)/);
-    if (newsMatch && SUPABASE_URL) {
+    if (newsMatch) {
       const slug = newsMatch[1];
-      const apiUrl = `${SUPABASE_URL}/rest/v1/articles?slug=eq.${slug}&status=eq.published&select=title,meta_description,image_url,content,published_at,category,tags&limit=1`;
-      
-      const response = await fetch(apiUrl, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-        }
-      });
-      
-      if (response.ok) {
-        const articles = await response.json();
-        const article = articles[0];
-        
-        if (article) {
-          const canonicalUrl = `https://deazons.com/noticias/${slug}`;
-          const jsonLd = JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "NewsArticle",
-            "headline": article.title,
-            "description": article.meta_description,
-            "image": article.image_url ? [article.image_url] : [],
-            "datePublished": article.published_at,
-            "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl }
+      const canonicalUrl = `https://deazons.com/noticias/${slug}`;
+
+      if (SUPABASE_URL) {
+        try {
+          const apiUrl = `${SUPABASE_URL}/rest/v1/articles?slug=eq.${slug}&status=eq.published&select=title,meta_description,image_url,content,published_at,category,tags&limit=1`;
+
+          const response = await fetch(apiUrl, {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+            }
           });
 
-          const textContent = (article.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 800);
+          if (response.ok) {
+            const articles = await response.json();
+            const article = articles[0];
 
-          const html = buildHTML({
-            title: `${article.title} | Deazons`,
-            description: article.meta_description || '',
-            imageUrl: article.image_url,
-            canonicalUrl,
-            jsonLd,
-            bodyContent: `
-              <article>
-                <h1>${escapeHtml(article.title)}</h1>
-                <p><strong>Categoria:</strong> ${escapeHtml(article.category || '')}</p>
-                <p>${escapeHtml(textContent)}...</p>
-                <p><a href="${canonicalUrl}">Leia o artigo completo no Deazons</a></p>
-              </article>
-            `
-          });
+            if (article) {
+              const jsonLd = JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "NewsArticle",
+                "headline": article.title,
+                "description": article.meta_description,
+                "image": article.image_url ? [article.image_url] : [],
+                "datePublished": article.published_at,
+                "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl }
+              });
 
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
-          return res.status(200).send(html);
+              const textContent = (article.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 800);
+
+              const html = buildHTML({
+                title: `${article.title} | Deazons`,
+                description: article.meta_description || '',
+                imageUrl: article.image_url,
+                canonicalUrl,
+                jsonLd,
+                bodyContent: `
+                  <article>
+                    <h1>${escapeHtml(article.title)}</h1>
+                    <p><strong>Categoria:</strong> ${escapeHtml(article.category || '')}</p>
+                    <p>${escapeHtml(textContent)}...</p>
+                    <p><a href="${canonicalUrl}">Leia o artigo completo no Deazons</a></p>
+                  </article>
+                `
+              });
+
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
+              return res.status(200).send(html);
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching article ${slug}:`, err);
         }
       }
+
+      // Fallback: artigo não encontrado ou API indisponível — retorna HTML mínimo
+      const fallbackHtml = buildHTML({
+        title: `Notícia | Deazons`,
+        description: `Leia as últimas notícias de cinema e entretenimento no Deazons.`,
+        canonicalUrl,
+        bodyContent: `<h1>Notícia | Deazons</h1><p>Leia as últimas notícias de cinema e entretenimento no Deazons.</p><p><a href="${canonicalUrl}">Ver no Deazons</a></p>`
+      });
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 's-maxage=300');
+      return res.status(200).send(fallbackHtml);
     }
 
-    // ÔöÇÔöÇ 8. BLOG POSTS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    // ── 8. BLOG POSTS ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     const blogMatch = urlPath.match(/^\/blog\/([^/?]+)/);
     if (blogMatch) {
       const postSlug = blogMatch[1];
       const post = blogPosts.find(p => p.slug === postSlug);
+      const canonicalUrl = `https://deazons.com/blog/${postSlug}`;
+
       if (post) {
-        const canonicalUrl = `https://deazons.com/blog/${postSlug}`;
         const images = imagesData[postSlug] || [];
         const imageUrl = images.length > 0 ? images[0].url : 'https://deazons.com/deazons-logo.png';
         const title = `${post.title} | Blog Deazons`;
@@ -547,9 +596,20 @@ export default async function handler(req, res) {
         res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
         return res.status(200).send(html);
       }
+
+      // Fallback: post não encontrado nos dados locais — retorna HTML mínimo
+      const fallbackHtml = buildHTML({
+        title: `Blog | Deazons`,
+        description: `Leia artigos, análises e curiosidades sobre cinema no Blog do Deazons.`,
+        canonicalUrl,
+        bodyContent: `<h1>Blog | Deazons</h1><p>Leia artigos, análises e curiosidades sobre cinema no Blog do Deazons.</p><p><a href="${canonicalUrl}">Ver no Deazons</a></p>`
+      });
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 's-maxage=300');
+      return res.status(200).send(fallbackHtml);
     }
 
-    // Fallback ÔÇö bot acessou rota n├úo reconhecida
+    // Fallback — bot acessou rota não reconhecida
     return res.status(404).end();
 
   } catch (err) {

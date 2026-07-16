@@ -6,9 +6,8 @@ Disallow: /admin/
 Disallow: /api/
 Disallow: /pesquisa
 
-# Sitemaps — todos listados para o Googlebot
+# Sitemaps — entrada principal
 Sitemap: https://deazons.com/sitemap.xml
-Sitemap: https://deazons.com/sitemap-index.xml
 Sitemap: https://deazons.com/sitemap-pages.xml
 Sitemap: https://deazons.com/sitemap-articles.xml
 Sitemap: https://deazons.com/sitemap-blog.xml
