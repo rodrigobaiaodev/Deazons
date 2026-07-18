@@ -124,6 +124,9 @@ const BlogPost = () => {
           )}
         </header>
 
+        {/* Anúncio */}
+        <div className="my-8" dangerouslySetInnerHTML={{ __html: '<div joinadscode="Content1" refresh="true" lazyload="true"></div>' }} />
+
         <div className="prose prose-invert prose-lg max-w-none prose-headings:scroll-mt-24 prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-xl">
           <Suspense fallback={<div className="animate-pulse space-y-4"><div className="h-4 bg-muted rounded w-3/4"></div><div className="h-4 bg-muted rounded w-full"></div><div className="h-4 bg-muted rounded w-5/6"></div></div>}>
             <PostContent images={images} />

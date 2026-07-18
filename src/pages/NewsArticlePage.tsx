@@ -203,6 +203,9 @@ const NewsArticlePage = () => {
           </div>
         )}
 
+        {/* Anúncio */}
+        <div className="my-8" dangerouslySetInnerHTML={{ __html: '<div joinadscode="Content1" refresh="true" lazyload="true"></div>' }} />
+
         {/* Conteúdo Renderizado a partir do Gemini com Estilização Premium */}
         <div 
           className="prose prose-invert prose-lg max-w-none 

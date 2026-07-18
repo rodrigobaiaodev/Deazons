@@ -147,25 +147,25 @@ function pickInternalLinks() {
   return shuffled.slice(0, 2);
 }
 
-function buildAIPrompt(title, rawContent) {
+function buildPrompt(title, rawContent) {
   // Preserva o HTML original completo (com imagens, estrutura)
-  const originalHtml = rawContent.trim().substring(0, 4000);
+  const originalHtml = rawContent.trim().slice(0, 15000);
   const [link1, link2] = pickInternalLinks();
 
   return `Você é um editor do portal brasileiro "Deazons" (especializado em cultura pop, cinema e séries).
-Sua tarefa é PARAFRASEAR o artigo HTML abaixo substituindo palavras por sinônimos equivalentes em português brasileiro, SEM alterar o sentido e SEM inventar informações.
+Sua tarefa é parafrasear o artigo HTML abaixo.
 
 REGRAS ABSOLUTAS — siga TODAS rigorosamente:
-1. PRESERVE TODO O HTML INTACTO: mantenha tags <img>, <figure>, <blockquote>, <ul>, <li>, <h2>, <h3>, <p>, <strong>, <em> exatamente como no original.
-2. PRESERVE todos os atributos src, alt, class, style das imagens — não altere URLs de imagens.
-3. REMOVA todos os links externos (<a href> apontando para outros domínios) — substitua pelo texto âncora simples (sem tag <a>).
+1. GERE HTML LIMPO E SEMÂNTICO: Use apenas tags limpas (<p>, <h2>, <h3>, <ul>, <li>, <blockquote>). OBRIGATÓRIO: Remova TODOS os atributos "class", "id" e "style" de todas as tags HTML. Não use "text-align" ou formatações inline.
+2. IMAGENS: Mantenha as tags <img> originais, preservando APENAS os atributos "src" e "alt". Remova width, height, class e style das imagens. Opcionalmente, envolva as imagens em uma tag <figure> simples.
+3. REMOVA todos os links externos (<a href> apontando para outros domínios) — substitua pelo texto âncora simples.
 4. ADICIONE exatamente 2 links internos naturais no corpo do texto, nas posições onde façam sentido contextual:
    - Link A: <a href="${link1.href}">${link1.label}</a>
    - Link B: <a href="${link2.href}">${link2.label}</a>
 5. APENAS substitua o TEXTO VISÍVEL por sinônimos naturais. Não invente fatos novos.
-6. Mantenha o mesmo tom, estrutura e tamanho do original.
+6. ESTRUTURA IDEAL DE LEITURA: Divida o texto em parágrafos curtos (2 a 4 frases no máximo por parágrafo) usando a tag <p>. Distribua bem o conteúdo para não formar "paredes de texto". Use <h2> ou <h3> para subtítulos onde fizer sentido.
 7. O título pode ser levemente reescrito para ficar mais chamativo, mas deve manter o mesmo sentido.
-8. NÃO adicione seções ou parágrafos que não existiam no original.
+8. NUNCA retorne um bloco gigante de texto. O texto deve ser altamente escaneável e agradável de ler em telas de celular.
 9. NÃO inclua o <h1> no campo "content" (ele é renderizado separadamente no site).
 
 FORMATO DE RETORNO — responda APENAS com JSON válido (sem markdown, sem \`\`\`):
@@ -181,6 +181,57 @@ FORMATO DE RETORNO — responda APENAS com JSON válido (sem markdown, sem \`\`\
 ARTIGO ORIGINAL PARA PARAFRASEAR:
 Título: ${title}
 Conteúdo HTML: ${originalHtml}`;
+}
+
+// === Fetch Full Content ========================================================
+async function fetchFullContent(url) {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(10000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+      }
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    let clean = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<header[\s\S]*?<\/header>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<aside[\s\S]*?<\/aside>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<form[\s\S]*?<\/form>/gi, '')
+      .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+      .replace(/<svg[\s\S]*?<\/svg>/gi, '');
+
+    let mainMatch = clean.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+    if (!mainMatch) mainMatch = clean.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+    if (mainMatch) clean = mainMatch[1];
+    else {
+      const bodyMatch = clean.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch) clean = bodyMatch[1];
+    }
+
+    clean = clean.replace(/<\/?div[^>]*>/gi, '\n');
+    clean = clean.replace(/<\/?span[^>]*>/gi, '');
+    clean = clean.replace(/<\/?button[^>]*>/gi, '');
+    clean = clean.replace(/\n\s*\n/g, '\n\n').trim();
+
+    const textLen = clean.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length;
+    if (textLen > 400) {
+      console.log(`    ↳ Conteúdo extraído da URL (${textLen} chars)`);
+      return clean;
+    }
+    return null;
+  } catch (e) {
+    console.log(`    ↳ Não foi possível buscar URL: ${e.message.slice(0, 60)}`);
+    return null;
+  }
 }
 
 // ─── Supabase helpers (usando fetch direto — sem SDK no server) ───────────────
@@ -246,11 +297,6 @@ async function getPublishedArticles(supabaseUrl, serviceKey) {
 }
 
 // ─── Sitemap updater ─────────────────────────────────────────────────────────
-// Atualiza o sitemap-articles.xml via Supabase Storage ou registra apenas no log.
-// Como o sitemap está em /public, ele é servido de forma estática pelo Vercel.
-// Para atualizar o sitemap em produção, a melhor abordagem é chamar
-// a API do Supabase para obter todos os artigos e regenerar via edge function.
-// Aqui, vamos apenas retornar a lista para ser processada externamente.
 
 async function buildArticlesSitemapContent(articles) {
   const today = new Date().toISOString().split('T')[0];
@@ -299,7 +345,6 @@ async function callGroq(groqKey, prompt) {
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
-  // Segurança: só aceitar chamadas do próprio Vercel Cron ou com chave secreta
   const authHeader = req.headers.authorization || '';
   const cronSecret = process.env.CRON_SECRET || '';
   const isVercelCron = req.headers['x-vercel-cron'] === '1';
@@ -332,7 +377,6 @@ export default async function handler(req, res) {
     }
 
     let articlesCreated = 0;
-    let totalProcessed = 0;
 
     outerLoop:
     for (const source of sources) {
@@ -358,14 +402,42 @@ export default async function handler(req, res) {
         if (articlesCreated >= MAX_ARTICLES_PER_RUN) break outerLoop;
         if (!item.link || !item.title) continue;
 
-        // Checar duplicata
+        if (/[\u0400-\u04FF\u4E00-\u9FFF\uAC00-\uD7AF\u0600-\u06FF\u1E00-\u1EFF]/.test(item.title)) {
+          log(`  ⏭️  Ignorado (idioma não suportado): ${item.title.substring(0, 50)}`);
+          continue;
+        }
+
+        const rawText = (item.content || item.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        const TOPIC_KEYWORDS = /film|movie|série|series|cinema|stream|netflix|disney|hbo|amazon|prime|apple tv|episód|temporada|ator|atriz|diretor|trailer|estreia|lançamento|marvel|dc |anime|bilheteria|oscar|emmy|golden globe|review|crítica|tv show|television/i;
+        if (!TOPIC_KEYWORDS.test(item.title) && !TOPIC_KEYWORDS.test(rawText.slice(0, 500))) {
+          log(`  ⏭️  Ignorado (fora do tema): ${item.title.substring(0, 50)}`);
+          continue;
+        }
+
+        if (rawText.length < 300) {
+          log(`  ⏭️  Ignorado (conteúdo muito curto: ${rawText.length} chars): ${item.title.substring(0, 50)}`);
+          continue;
+        }
+
         const exists = await articleExists(SUPABASE_URL, SERVICE_KEY, item.link);
         if (exists) continue;
 
-        totalProcessed++;
         log(`  ✏️  Processando (${articlesCreated + 1}/${MAX_ARTICLES_PER_RUN}): ${item.title.substring(0, 50)}`);
 
-        // Imagem: TMDB primeiro, depois RSS como fallback
+        let finalContent = item.content || item.description || '';
+        if (rawText.length < 1500) {
+          log(`  🔍 RSS curto (${rawText.length} chars) — buscando URL...`);
+          const fullHtml = await fetchFullContent(item.link);
+          if (fullHtml) finalContent = fullHtml;
+        }
+
+        const finalText = finalContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (finalText.length < 300) {
+          log(`  ⏭️  Ignorado (mesmo após fetch, insuficiente: ${finalText.length} chars)`);
+          continue;
+        }
+        log(`  📄 Conteúdo total disponível para paráfrase: ${finalText.length} chars`);
+
         let imageUrl = null;
         if (TMDB_KEY) {
           imageUrl = await getTMDBImage(item.title, TMDB_KEY);
@@ -378,8 +450,7 @@ export default async function handler(req, res) {
           imageUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1280&auto=format&fit=crop';
         }
 
-        const rawContent = item.content || item.description || '';
-        const prompt = buildAIPrompt(item.title, rawContent);
+        const prompt = buildPrompt(item.title, finalContent);
 
         let articleData = null;
         try {
