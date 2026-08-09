@@ -445,7 +445,7 @@ const MovieDetails = () => {
           <div className="space-y-8">
             {/* Onde Assistir (Movido para cima por importância) */}
             <div className="bg-gradient-to-br from-secondary/30 to-background rounded-[2rem] p-6 border border-border/50">
-              <WatchProviders mediaId={movieId} mediaType="movie" />
+              <WatchProviders mediaId={movieId} mediaType="movie" title={movie.title} />
             </div>
 
             {/* Elenco Principal */}

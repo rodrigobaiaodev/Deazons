@@ -481,7 +481,7 @@ const TVShowDetails = () => {
           <div className="space-y-8">
             {/* Onde Assistir */}
             <div className="bg-gradient-to-br from-secondary/30 to-background rounded-[2rem] p-6 border border-border/50">
-              <WatchProviders mediaId={extractId(slug!)} mediaType="tv" />
+              <WatchProviders mediaId={extractId(slug!)} mediaType="tv" title={show.name} />
             </div>
 
             {/* Elenco Principal */}
