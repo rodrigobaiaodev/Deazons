@@ -33,7 +33,7 @@ const PrivacyPolicy = () => {
               melhorar sua experiência, analisar o tráfego e personalizar o conteúdo.
             </p>
             <p>
-              <strong>Google Analytics:</strong> Utilizamos o Google Analytics (propriedade <code>G-KSCKH5X0P6</code>) 
+              <strong>Google Analytics:</strong> Utilizamos o Google Analytics (propriedade <code>G-BXTYQ721T6</code>) 
               para medir audiência e desempenho das páginas. O Google pode processar dados de uso conforme a 
               política de privacidade do Google. Você pode restringir cookies pelo banner do site ou pelas 
               configurações do navegador.
