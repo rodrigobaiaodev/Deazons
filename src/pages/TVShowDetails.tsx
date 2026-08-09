@@ -225,7 +225,11 @@ const TVShowDetails = () => {
                 <img
                   src={getImageUrl(show.poster_path, POSTER_SIZES.LARGE)}
                   alt={show.name}
+                  width={500}
+                  height={750}
                   className="w-full h-auto object-cover"
+                  fetchPriority="high"
+                  decoding="async"
                 />
               </div>
             </div>

@@ -33,8 +33,11 @@ const MediaCard = ({ media, type, className }: MediaCardProps) => {
         <img 
           src={getImageUrl(media.poster_path, POSTER_SIZES.MEDIUM)} 
           alt={title}
+          width={342}
+          height={513}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           loading="lazy"
+          decoding="async"
         />
 
         {/* Custom gradient overlay */}

@@ -218,7 +218,11 @@ const MovieDetails = () => {
                 <img
                   src={getImageUrl(movie.poster_path, POSTER_SIZES.LARGE)}
                   alt={movie.title}
+                  width={500}
+                  height={750}
                   className="w-full h-auto object-cover"
+                  fetchPriority="high"
+                  decoding="async"
                 />
               </div>
             </div>

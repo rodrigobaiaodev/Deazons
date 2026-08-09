@@ -302,7 +302,7 @@ const PersonDetails = () => {
                     
                     {sortedMovieCast.length > 20 && (
                       <Button variant="outline" className="mt-4" asChild>
-                        <Link to={`/pessoas/${id}/filmes`}>View all movies</Link>
+                        <Link to={`/pessoas/${personIdNum}-${slugify(person.name)}/movie`}>View all movies</Link>
                       </Button>
                     )}
                   </>
@@ -322,7 +322,7 @@ const PersonDetails = () => {
                     
                     {sortedTVCast.length > 20 && (
                       <Button variant="outline" className="mt-4" asChild>
-                        <Link to={`/pessoas/${id}/series`}>View all TV shows</Link>
+                        <Link to={`/pessoas/${personIdNum}-${slugify(person.name)}/tv`}>View all TV shows</Link>
                       </Button>
                     )}
                   </>
