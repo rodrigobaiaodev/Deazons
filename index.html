@@ -4,17 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Deploy ID — updated on each build to bust CDN edge cache -->
-    <meta name="deploy-id" content="1782943288565" />
+    <meta name="deploy-id" content="1786305000000" />
 
     <!--
-      NOTE: title, description, canonical, og:*, twitter:* are injected
-      dynamically per-page by the <SeoHead> component (react-helmet-async).
-      DO NOT add hardcoded canonical or duplicate meta tags here.
+      CRITICAL SEO: Do NOT put a homepage canonical here.
+      A hardcoded canonical to / makes Google treat every SPA URL as the homepage
+      when prerender is skipped. Per-page canonical/title/description come from:
+      - /api/prerender for bots (vercel.json UA rewrite)
+      - <SeoHead> (react-helmet-async) for browsers
     -->
-
-    <!-- Baseline title + canonical for SPA shell (react-helmet-async overrides per page in the browser) -->
     <title>Deazons | Filmes, Séries e Notícias de Entretenimento</title>
-    <link rel="canonical" href="https://deazons.com/" />
 
     <!-- Permanent / non-dynamic meta -->
     <meta name="author" content="Deazons" />
@@ -98,7 +97,7 @@
       });
     </script>
 
-    <!-- Schema.org JSON-LD – Website (sitewide, not page-specific) -->
+    <!-- Schema.org JSON-LD – Website (sitewide; page-specific schemas come from SeoHead/prerender) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -106,15 +105,7 @@
       "name": "Deazons",
       "url": "https://deazons.com",
       "description": "Portal completo de entretenimento com informações sobre filmes, séries e notícias do mundo do cinema.",
-      "inLanguage": "pt-BR",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://deazons.com/pesquisa?q={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
-      }
+      "inLanguage": "pt-BR"
     }
     </script>
   </head>

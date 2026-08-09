@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { 
@@ -11,26 +10,32 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import NotFound from "./NotFound";
+import SeoHead from "@/components/SeoHead";
+import { extractId, tvPath } from "@/lib/slug";
 
 const TVShowCast = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
+  const showId = slug ? extractId(slug) : NaN;
   const { toast } = useToast();
   const [credits, setCredits] = useState<Credits | null>(null);
   const [showTitle, setShowTitle] = useState<string>("");
+  const [showSlugPath, setShowSlugPath] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     const fetchTVShowCast = async () => {
-      if (!id) return;
+      if (!slug || Number.isNaN(showId)) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
         setError(null);
         setNotFound(false);
-        
-        const showId = parseInt(id);
         
         const [creditsData, showData] = await Promise.all([
           tmdbAPI.getTVShowCredits(showId),
@@ -39,6 +44,7 @@ const TVShowCast = () => {
         
         setCredits(creditsData);
         setShowTitle(showData.name);
+        setShowSlugPath(tvPath(showId, showData.name));
       } catch (err) {
         console.error("Error fetching TV show cast:", err);
         
@@ -58,7 +64,7 @@ const TVShowCast = () => {
     };
     
     fetchTVShowCast();
-  }, [id, toast]);
+  }, [slug, showId, toast]);
 
   if (notFound) {
     return <NotFound />;
@@ -77,25 +83,38 @@ const TVShowCast = () => {
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <p className="text-xl text-destructive">{error}</p>
         <Button asChild>
-          <Link to={`/series/${id}`}>Back to TV Show</Link>
+          <Link to={showSlugPath || `/series/${showId}`}>Back to TV Show</Link>
         </Button>
       </div>
     );
   }
 
-  // Cast and crew from credits
   const cast = credits?.cast || [];
   const crew = credits?.crew || [];
-
-  // Get all unique departments
   const departments = [...new Set(crew.map(person => person.department))].sort();
+  const castUrl = `https://deazons.com${showSlugPath}/cast`;
 
   return (
     <div className="min-h-screen pb-10 pt-24">
+      <SeoHead
+        title={`Elenco de ${showTitle} | Deazons`}
+        description={`Veja o elenco, atores, atrizes e equipe técnica da série ${showTitle} no Deazons.`}
+        canonicalOverride={castUrl}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Início", item: "https://deazons.com/" },
+            { "@type": "ListItem", position: 2, name: "Séries", item: "https://deazons.com/series" },
+            { "@type": "ListItem", position: 3, name: showTitle, item: `https://deazons.com${showSlugPath}` },
+            { "@type": "ListItem", position: 4, name: "Elenco", item: castUrl },
+          ],
+        }}
+      />
       <div className="container">
         <div className="mb-8">
           <Button variant="ghost" asChild className="mb-4 -ml-3 gap-1">
-            <Link to={`/series/${id}`}>
+            <Link to={showSlugPath || `/series/${showId}`}>
               <ArrowLeft size={16} />
               Back to TV Show
             </Link>
@@ -108,7 +127,6 @@ const TVShowCast = () => {
           </h1>
         </div>
 
-        {/* Cast Section */}
         <div className="mb-12">
           <h2 className="text-2xl font-semibold mb-6">Cast</h2>
           {cast.length > 0 ? (
@@ -139,7 +157,6 @@ const TVShowCast = () => {
           )}
         </div>
 
-        {/* Crew Section - Organized by Department */}
         <div>
           <h2 className="text-2xl font-semibold mb-6">Crew</h2>
           {departments.length > 0 ? (

@@ -1,16 +1,11 @@
 User-agent: *
 Allow: /
 
-# Bloquear rotas sem valor SEO
+# Rotas sem valor de indexação
 Disallow: /admin/
 Disallow: /api/
 Disallow: /pesquisa
+Allow: /api/sitemap-articles
 
-# Sitemaps — entrada principal
+# Sitemap index (sub-sitemaps são descobertos a partir dele)
 Sitemap: https://deazons.com/sitemap.xml
-Sitemap: https://deazons.com/sitemap-pages.xml
-Sitemap: https://deazons.com/sitemap-articles.xml
-Sitemap: https://deazons.com/sitemap-blog.xml
-Sitemap: https://deazons.com/sitemap-movies.xml
-Sitemap: https://deazons.com/sitemap-series.xml
-Sitemap: https://deazons.com/sitemap-people.xml

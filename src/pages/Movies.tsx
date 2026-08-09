@@ -69,10 +69,32 @@ const Movies = () => {
 
   const seoTitle = getFilterTitle() + " | Deazons";
   const seoDesc = `Explore nossa coleção de ${getFilterTitle().toLowerCase()} no Deazons. Encontre trailers, elenco e onde assistir.`;
+  const listJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: getFilterTitle(),
+    itemListElement: items.slice(0, 20).map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `https://deazons.com/filmes/${item.id}-${(item.title || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")}`,
+      name: item.title,
+    })),
+  };
 
   return (
     <div className="min-h-screen pb-10 pt-24">
-      <SeoHead title={seoTitle} description={seoDesc} />
+      <SeoHead
+        title={seoTitle}
+        description={seoDesc}
+        canonicalOverride="https://deazons.com/filmes"
+        jsonLd={listJsonLd}
+      />
       <div className="container max-w-7xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold tracking-tight">{getFilterTitle()}</h1>

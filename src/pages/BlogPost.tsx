@@ -44,21 +44,33 @@ const BlogPost = () => {
   };
 
   const pageUrl = `https://deazons.com/blog/${post.slug}`;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": post.title,
-    "description": post.description,
-    "image": coverImage ? [coverImage.url] : ["https://deazons.com/deazons-logo.png"],
-    "datePublished": post.publishedAt,
-    "author": [{ "@type": "Organization", "name": "Equipe Deazons", "url": "https://deazons.com" }],
-    "publisher": {
-      "@type": "Organization",
-      "name": "Deazons",
-      "logo": { "@type": "ImageObject", "url": "https://deazons.com/deazons-logo.png" }
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": post.title,
+      "description": post.description,
+      "image": coverImage ? [coverImage.url] : ["https://deazons.com/deazons-logo.png"],
+      "datePublished": post.publishedAt,
+      "dateModified": (post as BlogPostMeta & { updatedAt?: string }).updatedAt || post.publishedAt,
+      "author": [{ "@type": "Organization", "name": "Equipe Deazons", "url": "https://deazons.com" }],
+      "publisher": {
+        "@type": "Organization",
+        "name": "Deazons",
+        "logo": { "@type": "ImageObject", "url": "https://deazons.com/deazons-logo.png" }
+      },
+      "mainEntityOfPage": { "@type": "WebPage", "@id": pageUrl }
     },
-    "mainEntityOfPage": { "@type": "WebPage", "@id": pageUrl }
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Início", item: "https://deazons.com/" },
+        { "@type": "ListItem", position: 2, name: "Blog", item: "https://deazons.com/blog" },
+        { "@type": "ListItem", position: 3, name: post.title, item: pageUrl },
+      ],
+    },
+  ];
 
   return (
     <article className="min-h-screen pt-24 pb-20 bg-background text-foreground">

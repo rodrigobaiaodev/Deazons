@@ -152,33 +152,38 @@ function buildPrompt(title, rawContent) {
   const originalHtml = rawContent.trim().slice(0, 15000);
   const [link1, link2] = pickInternalLinks();
 
-  return `Você é um editor do portal brasileiro "Deazons" (especializado em cultura pop, cinema e séries).
-Sua tarefa é parafrasear o artigo HTML abaixo.
+  return `Você é um editor sênior do portal brasileiro "Deazons" (especializado em cultura pop, cinema e séries).
+Sua tarefa é REESCREVER o artigo abaixo com profundidade editorial — NÃO apenas parafrasear a sinopse.
 
 REGRAS ABSOLUTAS — siga TODAS rigorosamente:
-1. GERE HTML LIMPO E SEMÂNTICO: Use apenas tags limpas (<p>, <h2>, <h3>, <ul>, <li>, <blockquote>). OBRIGATÓRIO: Remova TODOS os atributos "class", "id" e "style" de todas as tags HTML. Não use "text-align" ou formatações inline.
-2. IMAGENS: Mantenha as tags <img> originais, preservando APENAS os atributos "src" e "alt". Remova width, height, class e style das imagens. Opcionalmente, envolva as imagens em uma tag <figure> simples.
-3. REMOVA todos os links externos (<a href> apontando para outros domínios) — substitua pelo texto âncora simples.
-4. ADICIONE exatamente 2 links internos naturais no corpo do texto, nas posições onde façam sentido contextual:
+1. PROFUNDIDADE MÍNIMA: o campo "content" deve ter NO MÍNIMO 450 palavras de texto único (conte sem tags HTML). Se o original for curto, EXPANDA com contexto cultural, impacto na indústria, comparação com obras relacionadas e análise — sem inventar fatos falsos (datas, elenco, bilheteria).
+2. ESTRUTURA OBRIGATÓRIA no HTML (nessa ordem):
+   - Introdução (1–2 <p>) contextualizando o tema
+   - Pelo menos 3 subtítulos <h2> cobrindo: análise/contexto, detalhes relevantes (produção, elenco, streaming), e conclusão/impacto
+   - Conclusão clara com takeaway para o leitor
+3. GERE HTML LIMPO E SEMÂNTICO: Use apenas tags limpas (<p>, <h2>, <h3>, <ul>, <li>, <blockquote>). OBRIGATÓRIO: Remova TODOS os atributos "class", "id" e "style". Não use formatações inline.
+4. IMAGENS: Mantenha as tags <img> originais com APENAS "src" e "alt". Remova width, height, class e style.
+5. REMOVA todos os links externos (<a href> para outros domínios) — substitua pelo texto âncora simples.
+6. ADICIONE exatamente 2 links internos naturais no corpo do texto:
    - Link A: <a href="${link1.href}">${link1.label}</a>
    - Link B: <a href="${link2.href}">${link2.label}</a>
-5. APENAS substitua o TEXTO VISÍVEL por sinônimos naturais. Não invente fatos novos.
-6. ESTRUTURA IDEAL DE LEITURA: Divida o texto em parágrafos curtos (2 a 4 frases no máximo por parágrafo) usando a tag <p>. Distribua bem o conteúdo para não formar "paredes de texto". Use <h2> ou <h3> para subtítulos onde fizer sentido.
-7. O título pode ser levemente reescrito para ficar mais chamativo, mas deve manter o mesmo sentido.
-8. NUNCA retorne um bloco gigante de texto. O texto deve ser altamente escaneável e agradável de ler em telas de celular.
-9. NÃO inclua o <h1> no campo "content" (ele é renderizado separadamente no site).
+7. Parágrafos curtos (2 a 4 frases). Texto escaneável para celular.
+8. O título pode ser levemente reescrito para ficar mais chamativo, mantendo o sentido.
+9. NÃO inclua o <h1> no campo "content".
+10. meta_description: 145–160 caracteres, única, sem cortar palavra no meio.
 
 FORMATO DE RETORNO — responda APENAS com JSON válido (sem markdown, sem \`\`\`):
 {
-  "title": "Título parafraseado e levemente mais chamativo",
+  "title": "Título editorial e chamativo",
   "slug": "titulo-em-kebab-case-sem-acentos",
-  "meta_description": "Descrição de 150-160 caracteres baseada no artigo original.",
+  "meta_description": "Descrição de 145-160 caracteres baseada no artigo reescrito.",
   "tags": ["tag1", "tag2", "tag3"],
   "category": "Uma de: Cinema, Séries, Marvel, DC, Lançamentos, Cultura Pop, Streaming, Anime",
-  "content": "<p>HTML parafraseado com links internos inseridos...</p>"
+  "content": "<p>HTML rico com introdução, h2s, análise e conclusão...</p>",
+  "word_count": 450
 }
 
-ARTIGO ORIGINAL PARA PARAFRASEAR:
+ARTIGO ORIGINAL PARA REESCREVER:
 Título: ${title}
 Conteúdo HTML: ${originalHtml}`;
 }
@@ -470,16 +475,23 @@ export default async function handler(req, res) {
           continue;
         }
 
-        // Preserva o HTML original (imagens, links) — apenas substitui sinônimos
+        // Conteúdo gerado pela IA (evita redeclarar finalContent do bloco anterior)
+        let rewrittenHtml = articleData.content || '';
+        const rewrittenWords = rewrittenHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+        if (rewrittenWords < 300) {
+          log(`  ⏭️  Ignorado (thin content: ${rewrittenWords} palavras; mínimo 300)`);
+          continue;
+        }
+        log(`  📝 Conteúdo reescrito: ${rewrittenWords} palavras`);
+
         // Injeta imagem de capa (TMDB) apenas se não estiver já no conteúdo
-        let finalContent = articleData.content || '';
-        if (imageUrl && !finalContent.includes(imageUrl)) {
-          const cover = `<figure style="margin: 0 0 2.5rem 0;"><img src="${imageUrl}" alt="${articleData.title || item.title}" style="width:100%; border-radius:16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" /></figure>`;
-          const firstP = finalContent.indexOf('</p>');
+        if (imageUrl && !rewrittenHtml.includes(imageUrl)) {
+          const cover = `<figure><img src="${imageUrl}" alt="${articleData.title || item.title}" /></figure>`;
+          const firstP = rewrittenHtml.indexOf('</p>');
           if (firstP !== -1) {
-            finalContent = finalContent.substring(0, firstP + 4) + '\n' + cover + '\n' + finalContent.substring(firstP + 4);
+            rewrittenHtml = rewrittenHtml.substring(0, firstP + 4) + '\n' + cover + '\n' + rewrittenHtml.substring(firstP + 4);
           } else {
-            finalContent = cover + '\n' + finalContent;
+            rewrittenHtml = cover + '\n' + rewrittenHtml;
           }
         }
         const finalSlug = slugify(articleData.slug || articleData.title || item.title);
@@ -487,7 +499,7 @@ export default async function handler(req, res) {
         const newArticle = {
           title: articleData.title || item.title,
           slug: finalSlug,
-          content: finalContent,
+          content: rewrittenHtml,
           meta_description: (articleData.meta_description || '').substring(0, 160),
           status: 'published',
           published_at: new Date().toISOString(),

@@ -1,59 +1,49 @@
 /**
- * Vercel Serverless Function ÔÇö Bot Prerender
- * 
- * Detects Googlebot/crawlers and returns HTML enriquecido com meta tags
- * extra├¡das do Supabase (para artigos) ou TMDB (para filmes/s├®ries).
- * 
- * Esta fun├º├úo ├® chamada pelo vercel.json para rotas espec├¡ficas.
+ * Vercel Serverless Function — Bot Prerender
+ *
+ * Serves HTML with unique title/description/canonical/OG/JSON-LD for crawlers.
+ * Wired via vercel.json User-Agent rewrite.
  */
 
 import { blogPosts } from '../src/blog/data/posts.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-let imagesData = {};
+let imagesData: Record<string, { url: string }[]> = {};
 try {
-  imagesData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/blog/data/images.json'), 'utf-8'));
+  imagesData = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'src/blog/data/images.json'), 'utf-8')
+  );
 } catch (e) {
   console.warn('Could not load images.json', e);
 }
 
-const BOT_REGEX = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|sogou|ia_archiver|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|mediapartners-google/i;
+const BOT_REGEX =
+  /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|sogou|ia_archiver|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|mediapartners-google/i;
 
-// Cache in-memory para chamadas TMDB
-const tmdbCache = new Map();
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas em milissegundos
-const MAX_CACHE_SIZE = 1000; // Limite de entradas para evitar leak de mem├│ria
+const BASE = 'https://deazons.com';
+const DEFAULT_OG = `${BASE}/deazons-logo.png`;
 
-async function fetchWithCache(url, cacheKey) {
+const tmdbCache = new Map<string, { timestamp: number; data: unknown }>();
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_CACHE_SIZE = 1000;
+
+async function fetchWithCache(url: string, cacheKey: string) {
   const now = Date.now();
   if (tmdbCache.has(cacheKey)) {
-    const cached = tmdbCache.get(cacheKey);
-    if (now - cached.timestamp < CACHE_TTL_MS) {
-      console.log(`[Cache Hit] key: ${cacheKey}`);
-      return cached.data;
-    }
-    console.log(`[Cache Expired] key: ${cacheKey}`);
+    const cached = tmdbCache.get(cacheKey)!;
+    if (now - cached.timestamp < CACHE_TTL_MS) return cached.data;
     tmdbCache.delete(cacheKey);
   }
-
-  // Evic├º├úo se o cache ultrapassar o limite m├íximo
   if (tmdbCache.size >= MAX_CACHE_SIZE) {
-    const oldestKey = tmdbCache.keys().next().value;
-    tmdbCache.delete(oldestKey);
-    console.log(`[Cache Evict] Evicted oldest key: ${oldestKey}`);
+    tmdbCache.delete(tmdbCache.keys().next().value);
   }
-
-  console.log(`[Cache Miss] Fetching fresh data for: ${cacheKey}`);
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`TMDB responded with status ${response.status}: ${response.statusText}`);
+    throw new Error(`TMDB ${response.status}: ${response.statusText}`);
   }
   const data = await response.json();
-  tmdbCache.set(cacheKey, {
-    timestamp: now,
-    data
-  });
+  tmdbCache.set(cacheKey, { timestamp: now, data });
   return data;
 }
 
@@ -61,31 +51,15 @@ function isBot(userAgent = '') {
   return BOT_REGEX.test(userAgent);
 }
 
-function buildHTML({ title, description, imageUrl, canonicalUrl, jsonLd, bodyContent }) {
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(title)}</title>
-  <meta name="description" content="${escapeHtml(description)}" />
-  <link rel="canonical" href="${canonicalUrl}" />
-  <meta property="og:title" content="${escapeHtml(title)}" />
-  <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:image" content="${imageUrl || 'https://deazons.com/og-default.jpg'}" />
-  <meta property="og:url" content="${canonicalUrl}" />
-  <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="Deazons" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${escapeHtml(title)}" />
-  <meta name="twitter:description" content="${escapeHtml(description)}" />
-  <meta name="twitter:image" content="${imageUrl || 'https://deazons.com/og-default.jpg'}" />
-  ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
-</head>
-<body>
-  ${bodyContent}
-</body>
-</html>`;
+/** Truncate at word boundary — never mid-word */
+function truncateAtWord(str: string, max = 160): string {
+  if (!str) return '';
+  const clean = String(str).replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(' ');
+  const base = lastSpace > max * 0.55 ? cut.slice(0, lastSpace) : cut;
+  return `${base.trimEnd()}…`;
 }
 
 function escapeHtml(str = '') {
@@ -97,18 +71,102 @@ function escapeHtml(str = '') {
     .replace(/'/g, '&#039;');
 }
 
-export default async function handler(req, res) {
-  const userAgent = req.headers['user-agent'] || '';
-  const parsedUrl = new URL(req.url, 'https://deazons.com');
+function slugify(text: string): string {
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
 
-  // Tell the CDN to cache SEPARATE responses for bot vs user agents.
-  // Without this, the CDN would serve the same cached prerender to normal users.
+function breadcrumbLd(items: { name: string; url: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+}
+
+function buildHTML({
+  title,
+  description,
+  imageUrl,
+  canonicalUrl,
+  jsonLd,
+  bodyContent,
+  ogType = 'website',
+  noIndex = false,
+  statusHint,
+}: {
+  title: string;
+  description: string;
+  imageUrl?: string | null;
+  canonicalUrl: string;
+  jsonLd?: string | object | object[] | null;
+  bodyContent: string;
+  ogType?: string;
+  noIndex?: boolean;
+  statusHint?: number;
+}) {
+  const desc = truncateAtWord(description, 160);
+  const img = imageUrl || DEFAULT_OG;
+  let ldBlock = '';
+  if (jsonLd) {
+    const payload = typeof jsonLd === 'string' ? jsonLd : JSON.stringify(jsonLd);
+    ldBlock = `<script type="application/ld+json">${payload}</script>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(desc)}" />
+  <link rel="canonical" href="${canonicalUrl}" />
+  <meta name="robots" content="${noIndex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}" />
+  <meta property="og:title" content="${escapeHtml(title)}" />
+  <meta property="og:description" content="${escapeHtml(desc)}" />
+  <meta property="og:image" content="${img}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="${canonicalUrl}" />
+  <meta property="og:type" content="${ogType}" />
+  <meta property="og:site_name" content="Deazons" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@deazons" />
+  <meta name="twitter:title" content="${escapeHtml(title)}" />
+  <meta name="twitter:description" content="${escapeHtml(desc)}" />
+  <meta name="twitter:image" content="${img}" />
+  ${ldBlock}
+</head>
+<body>
+  ${bodyContent}
+</body>
+</html>`;
+}
+
+function sendHtml(res: any, html: string, status = 200, cache = 's-maxage=86400, stale-while-revalidate=604800') {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', cache);
+  res.setHeader('Vary', 'User-Agent');
+  return res.status(status).send(html);
+}
+
+export default async function handler(req: any, res: any) {
+  const parsedUrl = new URL(req.url, BASE);
   res.setHeader('Vary', 'User-Agent');
 
-  // URL can come from ?url= parameter (due to Vercel rewrite) or directly from req.url
   let urlPath = parsedUrl.searchParams.get('url') || req.url || '/';
-  
-  // Strip query parameters and hashes, and trailing slashes for easier routing matches
   urlPath = urlPath.split('?')[0].split('#')[0];
   if (urlPath.endsWith('/') && urlPath.length > 1) {
     urlPath = urlPath.slice(0, -1);
@@ -119,384 +177,466 @@ export default async function handler(req, res) {
   const TMDB_KEY = process.env.VITE_TMDB_API_KEY || '6ea976a00b674fb5087f7e37ff72f45c';
 
   try {
-    // ÔöÇÔöÇ 1. HOME PAGE ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    // ── 1. HOME ──────────────────────────────────────────────────────────────
     if (urlPath === '/' || urlPath === '/index.html' || urlPath === '') {
-      const title = 'Deazons | Filmes, S├®ries e Not├¡cias de Entretenimento';
-      const description = 'Descubra informa├º├Áes sobre milhares de filmes, s├®ries e atores no Deazons - seu portal completo de entretenimento com not├¡cias, trailers e onde assistir.';
-      const canonicalUrl = 'https://deazons.com/';
-      const html = buildHTML({
-        title,
-        description,
-        canonicalUrl,
-        bodyContent: `
-          <h1>Deazons</h1>
-          <p>${description}</p>
-        `
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-      return res.status(200).send(html);
+      const title = 'Deazons | Filmes, Séries e Notícias de Entretenimento';
+      const description =
+        'Descubra informações sobre milhares de filmes, séries e atores no Deazons — portal de entretenimento com notícias, trailers e onde assistir.';
+      const canonicalUrl = `${BASE}/`;
+      return sendHtml(
+        res,
+        buildHTML({
+          title,
+          description,
+          canonicalUrl,
+          ogType: 'website',
+          jsonLd: [
+            {
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'Deazons',
+              url: BASE,
+              inLanguage: 'pt-BR',
+            },
+            breadcrumbLd([{ name: 'Início', url: canonicalUrl }]),
+          ],
+          bodyContent: `<h1>Deazons</h1><p>${escapeHtml(description)}</p>
+            <nav><a href="${BASE}/filmes">Filmes</a> · <a href="${BASE}/series">Séries</a> · <a href="${BASE}/noticias">Notícias</a> · <a href="${BASE}/blog">Blog</a></nav>`,
+        })
+      );
     }
 
-    // ÔöÇÔöÇ 2. CATEGORY LIST PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
-    if (urlPath === '/filmes') {
-      const title = 'Filmes Populares | Deazons';
-      const description = 'Explore nossa cole├º├úo de filmes populares no Deazons. Encontre trailers, elenco, onde assistir e muito mais.';
-      const canonicalUrl = 'https://deazons.com/filmes';
-      const html = buildHTML({
-        title,
-        description,
-        canonicalUrl,
-        bodyContent: `
-          <h1>${title}</h1>
-          <p>${description}</p>
-        `
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-      return res.status(200).send(html);
+    // ── 2. LIST / CATEGORY PAGES ─────────────────────────────────────────────
+    const listPages: Record<
+      string,
+      { title: string; description: string; h1: string; crumb: string }
+    > = {
+      '/filmes': {
+        title: 'Filmes Populares | Deazons',
+        description:
+          'Explore filmes populares no Deazons. Trailers, elenco, sinopse e onde assistir em streaming.',
+        h1: 'Filmes Populares',
+        crumb: 'Filmes',
+      },
+      '/series': {
+        title: 'Séries Populares | Deazons',
+        description:
+          'Explore séries populares no Deazons. Trailers, elenco, sinopse e onde assistir em streaming.',
+        h1: 'Séries Populares',
+        crumb: 'Séries',
+      },
+      '/pessoas': {
+        title: 'Famosos, Atores e Atrizes | Deazons',
+        description:
+          'Conheça atores, atrizes e cineastas populares. Biografias, fotos e filmografias no Deazons.',
+        h1: 'Pessoas',
+        crumb: 'Pessoas',
+      },
+      '/noticias': {
+        title: 'Notícias de Filmes, Séries e Cinema | Deazons',
+        description:
+          'Últimas notícias, novidades, rumores e lançamentos de cinema, séries e streaming no Deazons.',
+        h1: 'Notícias',
+        crumb: 'Notícias',
+      },
+      '/blog': {
+        title: 'Blog de Cinema e Entretenimento | Deazons',
+        description:
+          'Artigos, análises, listas e curiosidades sobre cinema, séries e streaming no Blog do Deazons.',
+        h1: 'Blog',
+        crumb: 'Blog',
+      },
+    };
+
+    if (listPages[urlPath]) {
+      const info = listPages[urlPath];
+      const canonicalUrl = `${BASE}${urlPath}`;
+      return sendHtml(
+        res,
+        buildHTML({
+          title: info.title,
+          description: info.description,
+          canonicalUrl,
+          ogType: 'website',
+          jsonLd: [
+            breadcrumbLd([
+              { name: 'Início', url: `${BASE}/` },
+              { name: info.crumb, url: canonicalUrl },
+            ]),
+            {
+              '@context': 'https://schema.org',
+              '@type': 'CollectionPage',
+              name: info.h1,
+              description: info.description,
+              url: canonicalUrl,
+            },
+          ],
+          bodyContent: `<nav><a href="${BASE}/">Início</a> › ${escapeHtml(info.crumb)}</nav>
+            <h1>${escapeHtml(info.h1)}</h1>
+            <p>${escapeHtml(info.description)}</p>`,
+        })
+      );
     }
 
-    if (urlPath === '/series') {
-      const title = 'S├®ries Populares | Deazons';
-      const description = 'Explore nossa cole├º├úo de s├®ries populares no Deazons. Encontre trailers, elenco, onde assistir e muito mais.';
-      const canonicalUrl = 'https://deazons.com/series';
-      const html = buildHTML({
-        title,
-        description,
-        canonicalUrl,
-        bodyContent: `
-          <h1>${title}</h1>
-          <p>${description}</p>
-        `
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-      return res.status(200).send(html);
-    }
-
-    if (urlPath === '/pessoas') {
-      const title = 'Famosos, Atores e Atrizes | Deazons';
-      const description = 'Conhe├ºa os atores, atrizes e cineastas mais populares do momento. Veja biografias, fotos e filmografias no Deazons.';
-      const canonicalUrl = 'https://deazons.com/pessoas';
-      const html = buildHTML({
-        title,
-        description,
-        canonicalUrl,
-        bodyContent: `
-          <h1>${title}</h1>
-          <p>${description}</p>
-        `
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-      return res.status(200).send(html);
-    }
-
-    if (urlPath === '/noticias') {
-      const title = 'Not├¡cias de Filmes, S├®ries e Cinema | Deazons';
-      const description = 'Acompanhe as ├║ltimas not├¡cias, novidades, rumores e lan├ºamentos do mundo do cinema, s├®ries de TV e streaming no Deazons.';
-      const canonicalUrl = 'https://deazons.com/noticias';
-      const html = buildHTML({
-        title,
-        description,
-        canonicalUrl,
-        bodyContent: `
-          <h1>${title}</h1>
-          <p>${description}</p>
-        `
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-      return res.status(200).send(html);
-    }
-
-    if (urlPath === '/blog') {
-      const title = 'Blog de Cinema e Entretenimento | Deazons';
-      const description = 'Artigos, an├ílises, listas e curiosidades sobre o mundo do cinema, s├®ries de TV e streaming no Blog do Deazons.';
-      const canonicalUrl = 'https://deazons.com/blog';
-      const html = buildHTML({
-        title,
-        description,
-        canonicalUrl,
-        bodyContent: `
-          <h1>${title}</h1>
-          <p>${description}</p>
-        `
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-      return res.status(200).send(html);
-    }
-
-    // ÔöÇÔöÇ 3. STATIC INSTITUTIONAL PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
-    const staticPages = {
+    // ── 3. STATIC PAGES ──────────────────────────────────────────────────────
+    const staticPages: Record<string, { title: string; description: string }> = {
       '/sobre': {
-        title: 'Sobre o Deazons | Filmes, S├®ries e Entretenimento',
-        description: 'Saiba mais sobre o Deazons, nossa miss├úo e como trazemos as melhores informa├º├Áes sobre cinema e entretenimento para voc├¬.'
+        title: 'Sobre o Deazons | Filmes, Séries e Entretenimento',
+        description:
+          'Saiba mais sobre o Deazons, nossa missão e como trazemos informações sobre cinema e entretenimento.',
       },
       '/privacidade': {
-        title: 'Pol├¡tica de Privacidade | Deazons',
-        description: 'Leia a Pol├¡tica de Privacidade do Deazons. Saiba como coletamos, usamos e protegemos seus dados pessoais.'
+        title: 'Política de Privacidade | Deazons',
+        description:
+          'Leia a Política de Privacidade do Deazons. Saiba como coletamos, usamos e protegemos seus dados.',
       },
       '/termos': {
-        title: 'Termos de Servi├ºo | Deazons',
-        description: 'Leia os Termos de Servi├ºo do Deazons. Condi├º├Áes de uso, pol├¡ticas do site e diretrizes de utiliza├º├úo da nossa plataforma.'
+        title: 'Termos de Serviço | Deazons',
+        description:
+          'Leia os Termos de Serviço do Deazons: condições de uso e diretrizes da plataforma.',
       },
       '/contato': {
         title: 'Contato | Deazons',
-        description: 'Entre em contato com a equipe do Deazons para parcerias, sugest├Áes, d├║vidas ou feedback.'
-      }
+        description:
+          'Entre em contato com a equipe do Deazons para parcerias, sugestões, dúvidas ou feedback.',
+      },
     };
 
     if (staticPages[urlPath]) {
       const info = staticPages[urlPath];
-      const html = buildHTML({
-        title: info.title,
-        description: info.description,
-        canonicalUrl: `https://deazons.com${urlPath}`,
-        bodyContent: `
-          <h1>${info.title}</h1>
-          <p>${info.description}</p>
-        `
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-      return res.status(200).send(html);
+      const canonicalUrl = `${BASE}${urlPath}`;
+      const label = info.title.split('|')[0].trim();
+      return sendHtml(
+        res,
+        buildHTML({
+          title: info.title,
+          description: info.description,
+          canonicalUrl,
+          ogType: 'website',
+          jsonLd: breadcrumbLd([
+            { name: 'Início', url: `${BASE}/` },
+            { name: label, url: canonicalUrl },
+          ]),
+          bodyContent: `<nav><a href="${BASE}/">Início</a> › ${escapeHtml(label)}</nav>
+            <h1>${escapeHtml(label)}</h1>
+            <p>${escapeHtml(info.description)}</p>`,
+        })
+      );
     }
 
-    // ÔöÇÔöÇ 4. MOVIE DETAILS AND CAST PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
-    const movieMatch = urlPath.match(/^\/filmes\/(\d+)-?([^/]*)/);
+    // ── 4. MOVIES ────────────────────────────────────────────────────────────
+    const movieMatch = urlPath.match(/^\/filmes\/(\d+)(?:-([^/]*))?(\/cast)?$/);
     if (movieMatch) {
       const movieId = movieMatch[1];
-      const movieSlug = movieMatch[2] || '';
-      const isCastPage = urlPath.endsWith('/cast');
-      
-      const cacheKey = `movie-${movieId}`;
+      const isCastPage = Boolean(movieMatch[3]);
       try {
-        const movie = await fetchWithCache(
-          `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_KEY}&language=pt-BR`,
-          cacheKey
+        const movie: any = await fetchWithCache(
+          `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_KEY}&language=pt-BR&append_to_response=credits`,
+          `movie-${movieId}`
         );
-        
-        if (movie && movie.title) {
-          const canonicalUrl = `https://deazons.com/filmes/${movieId}-${movieSlug}${isCastPage ? '/cast' : ''}`;
-          const imageUrl = movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null;
+
+        if (movie?.title) {
+          const slug = slugify(movie.title);
+          const canonicalUrl = `${BASE}/filmes/${movieId}-${slug}${isCastPage ? '/cast' : ''}`;
+          const imageUrl = movie.backdrop_path
+            ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+            : movie.poster_path
+              ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
+              : null;
           const year = movie.release_date ? new Date(movie.release_date).getFullYear() : '';
-          
+          const overview = truncateAtWord(movie.overview || '', 160);
+
           let title = `${movie.title}${year ? ` (${year})` : ''} | Deazons`;
-          let description = movie.overview ? movie.overview.substring(0, 160) + '...' : `Veja detalhes, elenco e onde assistir ao filme ${movie.title} no Deazons.`;
-          
+          let description =
+            overview ||
+            `Veja detalhes, elenco e onde assistir ao filme ${movie.title} no Deazons.`;
+
           if (isCastPage) {
             title = `Elenco de ${movie.title}${year ? ` (${year})` : ''} | Deazons`;
-            description = `Veja todo o elenco, atores, atrizes, diretores e equipe t├®cnica do filme ${movie.title} no Deazons.`;
+            description = `Veja o elenco, atores, atrizes e equipe técnica do filme ${movie.title} no Deazons.`;
           }
 
-          const jsonLd = JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": isCastPage ? "WebPage" : "Movie",
-            "name": movie.title,
-            "description": description,
-            "image": imageUrl,
-            "datePublished": movie.release_date,
-            "genre": (movie.genres || []).map(g => g.name)
-          });
+          const cast = (movie.credits?.cast || [])
+            .slice(0, 8)
+            .map((c: any) => ({ '@type': 'Person', name: c.name }));
+          const directors = (movie.credits?.crew || [])
+            .filter((c: any) => c.job === 'Director')
+            .map((c: any) => ({ '@type': 'Person', name: c.name }));
 
-          const html = buildHTML({
-            title,
+          const movieLd: Record<string, unknown> = {
+            '@context': 'https://schema.org',
+            '@type': isCastPage ? 'WebPage' : 'Movie',
+            name: movie.title,
             description,
-            imageUrl,
-            canonicalUrl,
-            jsonLd,
-            bodyContent: `
-              <article>
-                <h1>${escapeHtml(title)}</h1>
-                <p>${escapeHtml(description)}</p>
-                ${movie.genres ? `<p><strong>G├¬neros:</strong> ${movie.genres.map(g => escapeHtml(g.name)).join(', ')}</p>` : ''}
-                <p><a href="${canonicalUrl}">Ver no Deazons</a></p>
-              </article>
-            `
-          });
+            image: imageUrl,
+            datePublished: movie.release_date,
+            url: canonicalUrl,
+            genre: (movie.genres || []).map((g: any) => g.name),
+          };
+          if (!isCastPage) {
+            if (directors.length) movieLd.director = directors;
+            if (cast.length) movieLd.actor = cast;
+            if (movie.vote_average > 0) {
+              movieLd.aggregateRating = {
+                '@type': 'AggregateRating',
+                ratingValue: Number(movie.vote_average).toFixed(1),
+                bestRating: '10',
+                ratingCount: movie.vote_count || 1,
+              };
+            }
+          }
 
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-          return res.status(200).send(html);
+          const crumbs = [
+            { name: 'Início', url: `${BASE}/` },
+            { name: 'Filmes', url: `${BASE}/filmes` },
+            { name: movie.title, url: `${BASE}/filmes/${movieId}-${slug}` },
+          ];
+          if (isCastPage) crumbs.push({ name: 'Elenco', url: canonicalUrl });
+
+          return sendHtml(
+            res,
+            buildHTML({
+              title,
+              description,
+              imageUrl,
+              canonicalUrl,
+              ogType: isCastPage ? 'website' : 'video.movie',
+              jsonLd: [movieLd, breadcrumbLd(crumbs)],
+              bodyContent: `<nav><a href="${BASE}/">Início</a> › <a href="${BASE}/filmes">Filmes</a> › ${escapeHtml(movie.title)}${isCastPage ? ' › Elenco' : ''}</nav>
+                <article>
+                  <h1>${escapeHtml(isCastPage ? `Elenco de ${movie.title}` : movie.title)}</h1>
+                  <p>${escapeHtml(description)}</p>
+                  ${movie.genres?.length ? `<p><strong>Gêneros:</strong> ${movie.genres.map((g: any) => escapeHtml(g.name)).join(', ')}</p>` : ''}
+                  ${movie.release_date ? `<p><strong>Lançamento:</strong> ${escapeHtml(movie.release_date)}</p>` : ''}
+                  ${!isCastPage && cast.length ? `<p><strong>Elenco:</strong> ${cast.map((c: any) => escapeHtml(c.name)).join(', ')}</p>` : ''}
+                  <p><a href="${canonicalUrl}">Ver no Deazons</a></p>
+                </article>`,
+            })
+          );
         }
       } catch (err) {
         console.error(`Error fetching movie ${movieId}:`, err);
-        // Fallback: serve minimal HTML so Googlebot never receives a 404 for a known URL
-        const html = buildHTML({
-          title: `Filme | Deazons`,
-          description: `Veja detalhes, elenco e onde assistir a este filme no Deazons.`,
-          canonicalUrl: `https://deazons.com${urlPath}`,
-          bodyContent: `<h1>Filme | Deazons</h1><p>Veja detalhes, elenco e onde assistir a este filme no Deazons.</p>`
-        });
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 's-maxage=300');
-        return res.status(200).send(html);
       }
+
+      return sendHtml(
+        res,
+        buildHTML({
+          title: 'Filme não encontrado | Deazons',
+          description: 'O filme solicitado não foi encontrado no Deazons.',
+          canonicalUrl: `${BASE}${urlPath}`,
+          noIndex: true,
+          bodyContent: `<h1>Filme não encontrado</h1><p><a href="${BASE}/filmes">Ver filmes</a></p>`,
+        }),
+        404,
+        's-maxage=300'
+      );
     }
 
-    // ÔöÇÔöÇ 5. TV SHOW DETAILS AND CAST PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
-    const seriesMatch = urlPath.match(/^\/series\/(\d+)-?([^/]*)/);
+    // ── 5. SERIES ────────────────────────────────────────────────────────────
+    const seriesMatch = urlPath.match(/^\/series\/(\d+)(?:-([^/]*))?(\/cast)?$/);
     if (seriesMatch) {
       const tvId = seriesMatch[1];
-      const tvSlug = seriesMatch[2] || '';
-      const isCastPage = urlPath.endsWith('/cast');
-      
-      const cacheKey = `tv-${tvId}`;
+      const isCastPage = Boolean(seriesMatch[3]);
       try {
-        const tv = await fetchWithCache(
-          `https://api.themoviedb.org/3/tv/${tvId}?api_key=${TMDB_KEY}&language=pt-BR`,
-          cacheKey
+        const tv: any = await fetchWithCache(
+          `https://api.themoviedb.org/3/tv/${tvId}?api_key=${TMDB_KEY}&language=pt-BR&append_to_response=credits`,
+          `tv-${tvId}`
         );
-        
-        if (tv && tv.name) {
-          const canonicalUrl = `https://deazons.com/series/${tvId}-${tvSlug}${isCastPage ? '/cast' : ''}`;
-          const imageUrl = tv.backdrop_path ? `https://image.tmdb.org/t/p/w1280${tv.backdrop_path}` : null;
+
+        if (tv?.name) {
+          const slug = slugify(tv.name);
+          const canonicalUrl = `${BASE}/series/${tvId}-${slug}${isCastPage ? '/cast' : ''}`;
+          const imageUrl = tv.backdrop_path
+            ? `https://image.tmdb.org/t/p/w1280${tv.backdrop_path}`
+            : tv.poster_path
+              ? `https://image.tmdb.org/t/p/w780${tv.poster_path}`
+              : null;
           const year = tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : '';
-          
+          const overview = truncateAtWord(tv.overview || '', 160);
+
           let title = `${tv.name}${year ? ` (${year})` : ''} | Deazons`;
-          let description = tv.overview ? tv.overview.substring(0, 160) + '...' : `Veja detalhes, elenco e onde assistir ├á s├®rie ${tv.name} no Deazons.`;
-          
+          let description =
+            overview || `Veja detalhes, elenco e onde assistir à série ${tv.name} no Deazons.`;
+
           if (isCastPage) {
             title = `Elenco de ${tv.name}${year ? ` (${year})` : ''} | Deazons`;
-            description = `Veja todo o elenco, atores, atrizes, diretores e equipe t├®cnica da s├®rie ${tv.name} no Deazons.`;
+            description = `Veja o elenco, atores, atrizes e equipe técnica da série ${tv.name} no Deazons.`;
           }
 
-          const jsonLd = JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": isCastPage ? "WebPage" : "TVSeries",
-            "name": tv.name,
-            "description": description,
-            "image": imageUrl,
-            "datePublished": tv.first_air_date,
-            "genre": (tv.genres || []).map(g => g.name)
-          });
+          const cast = (tv.credits?.cast || [])
+            .slice(0, 8)
+            .map((c: any) => ({ '@type': 'Person', name: c.name }));
 
-          const html = buildHTML({
-            title,
+          const tvLd: Record<string, unknown> = {
+            '@context': 'https://schema.org',
+            '@type': isCastPage ? 'WebPage' : 'TVSeries',
+            name: tv.name,
             description,
-            imageUrl,
-            canonicalUrl,
-            jsonLd,
-            bodyContent: `
-              <article>
-                <h1>${escapeHtml(title)}</h1>
-                <p>${escapeHtml(description)}</p>
-                ${tv.genres ? `<p><strong>G├¬neros:</strong> ${tv.genres.map(g => escapeHtml(g.name)).join(', ')}</p>` : ''}
-                <p><a href="${canonicalUrl}">Ver no Deazons</a></p>
-              </article>
-            `
-          });
+            image: imageUrl,
+            datePublished: tv.first_air_date,
+            url: canonicalUrl,
+            genre: (tv.genres || []).map((g: any) => g.name),
+          };
+          if (!isCastPage) {
+            if (cast.length) tvLd.actor = cast;
+            if (tv.vote_average > 0) {
+              tvLd.aggregateRating = {
+                '@type': 'AggregateRating',
+                ratingValue: Number(tv.vote_average).toFixed(1),
+                bestRating: '10',
+                ratingCount: tv.vote_count || 1,
+              };
+            }
+          }
 
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-          return res.status(200).send(html);
+          const crumbs = [
+            { name: 'Início', url: `${BASE}/` },
+            { name: 'Séries', url: `${BASE}/series` },
+            { name: tv.name, url: `${BASE}/series/${tvId}-${slug}` },
+          ];
+          if (isCastPage) crumbs.push({ name: 'Elenco', url: canonicalUrl });
+
+          return sendHtml(
+            res,
+            buildHTML({
+              title,
+              description,
+              imageUrl,
+              canonicalUrl,
+              ogType: isCastPage ? 'website' : 'video.tv_show',
+              jsonLd: [tvLd, breadcrumbLd(crumbs)],
+              bodyContent: `<nav><a href="${BASE}/">Início</a> › <a href="${BASE}/series">Séries</a> › ${escapeHtml(tv.name)}${isCastPage ? ' › Elenco' : ''}</nav>
+                <article>
+                  <h1>${escapeHtml(isCastPage ? `Elenco de ${tv.name}` : tv.name)}</h1>
+                  <p>${escapeHtml(description)}</p>
+                  ${tv.genres?.length ? `<p><strong>Gêneros:</strong> ${tv.genres.map((g: any) => escapeHtml(g.name)).join(', ')}</p>` : ''}
+                  <p><a href="${canonicalUrl}">Ver no Deazons</a></p>
+                </article>`,
+            })
+          );
         }
       } catch (err) {
         console.error(`Error fetching tv ${tvId}:`, err);
-        // Fallback: serve minimal HTML so Googlebot never receives a 404 for a known URL
-        const html = buildHTML({
-          title: `Série | Deazons`,
-          description: `Veja detalhes, elenco e onde assistir a esta série no Deazons.`,
-          canonicalUrl: `https://deazons.com${urlPath}`,
-          bodyContent: `<h1>Série | Deazons</h1><p>Veja detalhes, elenco e onde assistir a esta série no Deazons.</p>`
-        });
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 's-maxage=300');
-        return res.status(200).send(html);
       }
+
+      return sendHtml(
+        res,
+        buildHTML({
+          title: 'Série não encontrada | Deazons',
+          description: 'A série solicitada não foi encontrada no Deazons.',
+          canonicalUrl: `${BASE}${urlPath}`,
+          noIndex: true,
+          bodyContent: `<h1>Série não encontrada</h1><p><a href="${BASE}/series">Ver séries</a></p>`,
+        }),
+        404,
+        's-maxage=300'
+      );
     }
 
-    // ÔöÇÔöÇ 6. PERSON DETAILS AND FILMOGRAPHY PAGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
-    const personMatch = urlPath.match(/^\/pessoas\/(\d+)-?([^/]*)/);
+    // ── 6. PEOPLE ────────────────────────────────────────────────────────────
+    const personMatch = urlPath.match(/^\/pessoas\/(\d+)(?:-([^/]*))?(?:\/(movie|tv))?$/);
     if (personMatch) {
       const personId = personMatch[1];
-      const personSlug = personMatch[2] || '';
-      const isFilmography = personSlug === 'movie' || personSlug === 'tv' || urlPath.split('/').length > 3;
-      const mediaType = urlPath.split('/')[3] || personSlug;
-      
-      const cacheKey = `person-${personId}`;
+      const mediaType = personMatch[3] || '';
+      const isFilmography = mediaType === 'movie' || mediaType === 'tv';
+
       try {
-        const person = await fetchWithCache(
+        const person: any = await fetchWithCache(
           `https://api.themoviedb.org/3/person/${personId}?api_key=${TMDB_KEY}&language=pt-BR`,
-          cacheKey
+          `person-${personId}`
         );
-        
-        if (person && person.name) {
-          const canonicalUrl = `https://deazons.com/pessoas/${personId}${isFilmography ? `/${mediaType}` : ''}`;
-          const imageUrl = person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : null;
-          
+
+        if (person?.name) {
+          const slug = slugify(person.name);
+          const basePersonUrl = `${BASE}/pessoas/${personId}-${slug}`;
+          const canonicalUrl = isFilmography ? `${basePersonUrl}/${mediaType}` : basePersonUrl;
+          const imageUrl = person.profile_path
+            ? `https://image.tmdb.org/t/p/w780${person.profile_path}`
+            : null;
+
           let title = `${person.name} | Ator/Atriz | Deazons`;
-          let description = person.biography 
-            ? person.biography.substring(0, 160) + '...' 
-            : `Veja a filmografia completa, fotos e informa├º├Áes sobre ${person.name} no Deazons.`;
-          
+          let description = person.biography
+            ? truncateAtWord(person.biography, 160)
+            : `Veja a filmografia completa, fotos e informações sobre ${person.name} no Deazons.`;
+
           if (isFilmography) {
-            const typeStr = mediaType === 'tv' ? 's├®ries' : 'filmes';
+            const typeStr = mediaType === 'tv' ? 'séries' : 'filmes';
             title = `Filmografia de ${person.name} (${typeStr}) | Deazons`;
             description = `Confira a filmografia completa com todos os ${typeStr} de ${person.name} no Deazons.`;
           }
 
-          const jsonLd = JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Person",
-            "name": person.name,
-            "description": description,
-            "image": imageUrl,
-            "url": canonicalUrl
-          });
-
-          const html = buildHTML({
-            title,
+          const personLd = {
+            '@context': 'https://schema.org',
+            '@type': 'Person',
+            name: person.name,
             description,
-            imageUrl,
-            canonicalUrl,
-            jsonLd,
-            bodyContent: `
-              <article>
-                <h1>${escapeHtml(title)}</h1>
-                <p>${escapeHtml(description)}</p>
-                <p><a href="${canonicalUrl}">Ver no Deazons</a></p>
-              </article>
-            `
-          });
+            image: imageUrl,
+            url: basePersonUrl,
+            ...(person.birthday && { birthDate: person.birthday }),
+          };
 
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-          return res.status(200).send(html);
+          const crumbs = [
+            { name: 'Início', url: `${BASE}/` },
+            { name: 'Pessoas', url: `${BASE}/pessoas` },
+            { name: person.name, url: basePersonUrl },
+          ];
+          if (isFilmography) {
+            crumbs.push({
+              name: mediaType === 'tv' ? 'Séries' : 'Filmes',
+              url: canonicalUrl,
+            });
+          }
+
+          return sendHtml(
+            res,
+            buildHTML({
+              title,
+              description,
+              imageUrl,
+              canonicalUrl,
+              ogType: 'profile',
+              jsonLd: [personLd, breadcrumbLd(crumbs)],
+              bodyContent: `<nav><a href="${BASE}/">Início</a> › <a href="${BASE}/pessoas">Pessoas</a> › ${escapeHtml(person.name)}</nav>
+                <article>
+                  <h1>${escapeHtml(person.name)}</h1>
+                  <p>${escapeHtml(description)}</p>
+                  <p><a href="${canonicalUrl}">Ver no Deazons</a></p>
+                </article>`,
+            })
+          );
         }
       } catch (err) {
         console.error(`Error fetching person ${personId}:`, err);
       }
-      // Fallback: serve minimal HTML so Googlebot never receives a 404 for a known URL
-      const html = buildHTML({
-        title: `Pessoa | Deazons`,
-        description: `Veja a filmografia completa e informações sobre esta pessoa no Deazons.`,
-        canonicalUrl: `https://deazons.com${urlPath}`,
-        bodyContent: `<h1>Pessoa | Deazons</h1><p>Veja a filmografia completa e informações no Deazons.</p>`
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=300');
-      return res.status(200).send(html);
+
+      return sendHtml(
+        res,
+        buildHTML({
+          title: 'Pessoa não encontrada | Deazons',
+          description: 'A pessoa solicitada não foi encontrada no Deazons.',
+          canonicalUrl: `${BASE}${urlPath}`,
+          noIndex: true,
+          bodyContent: `<h1>Pessoa não encontrada</h1><p><a href="${BASE}/pessoas">Ver pessoas</a></p>`,
+        }),
+        404,
+        's-maxage=300'
+      );
     }
 
-    // ── 7. NEWS ARTICLES (SUPABASE) ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    // ── 7. NEWS ARTICLES ─────────────────────────────────────────────────────
     const newsMatch = urlPath.match(/^\/noticias\/([^/?]+)/);
     if (newsMatch) {
       const slug = newsMatch[1];
-      const canonicalUrl = `https://deazons.com/noticias/${slug}`;
+      const canonicalUrl = `${BASE}/noticias/${slug}`;
 
-      if (SUPABASE_URL) {
+      if (SUPABASE_URL && SUPABASE_KEY) {
         try {
-          const apiUrl = `${SUPABASE_URL}/rest/v1/articles?slug=eq.${slug}&status=eq.published&select=title,meta_description,image_url,content,published_at,category,tags&limit=1`;
-
+          const apiUrl = `${SUPABASE_URL}/rest/v1/articles?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=title,meta_description,image_url,content,published_at,updated_at,category,tags&limit=1`;
           const response = await fetch(apiUrl, {
             headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-            }
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+            },
           });
 
           if (response.ok) {
@@ -504,37 +644,58 @@ export default async function handler(req, res) {
             const article = articles[0];
 
             if (article) {
-              const jsonLd = JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "NewsArticle",
-                "headline": article.title,
-                "description": article.meta_description,
-                "image": article.image_url ? [article.image_url] : [],
-                "datePublished": article.published_at,
-                "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl }
-              });
+              const textContent = (article.content || '')
+                .replace(/<[^>]*>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+              const description =
+                truncateAtWord(article.meta_description || textContent, 160) ||
+                truncateAtWord(article.title, 160);
 
-              const textContent = (article.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 800);
+              const articleLd = {
+                '@context': 'https://schema.org',
+                '@type': 'NewsArticle',
+                headline: article.title,
+                description,
+                image: article.image_url ? [article.image_url] : [],
+                datePublished: article.published_at,
+                dateModified: article.updated_at || article.published_at,
+                author: { '@type': 'Organization', name: 'Deazons' },
+                publisher: {
+                  '@type': 'Organization',
+                  name: 'Deazons',
+                  logo: { '@type': 'ImageObject', url: DEFAULT_OG },
+                },
+                mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+              };
 
-              const html = buildHTML({
-                title: `${article.title} | Deazons`,
-                description: article.meta_description || '',
-                imageUrl: article.image_url,
-                canonicalUrl,
-                jsonLd,
-                bodyContent: `
-                  <article>
-                    <h1>${escapeHtml(article.title)}</h1>
-                    <p><strong>Categoria:</strong> ${escapeHtml(article.category || '')}</p>
-                    <p>${escapeHtml(textContent)}...</p>
-                    <p><a href="${canonicalUrl}">Leia o artigo completo no Deazons</a></p>
-                  </article>
-                `
-              });
-
-              res.setHeader('Content-Type', 'text/html; charset=utf-8');
-              res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
-              return res.status(200).send(html);
+              return sendHtml(
+                res,
+                buildHTML({
+                  title: truncateAtWord(`${article.title} | Deazons`, 65),
+                  description,
+                  imageUrl: article.image_url,
+                  canonicalUrl,
+                  ogType: 'article',
+                  jsonLd: [
+                    articleLd,
+                    breadcrumbLd([
+                      { name: 'Início', url: `${BASE}/` },
+                      { name: 'Notícias', url: `${BASE}/noticias` },
+                      { name: article.title, url: canonicalUrl },
+                    ]),
+                  ],
+                  bodyContent: `<nav><a href="${BASE}/">Início</a> › <a href="${BASE}/noticias">Notícias</a> › ${escapeHtml(article.title)}</nav>
+                    <article>
+                      <h1>${escapeHtml(article.title)}</h1>
+                      ${article.category ? `<p><strong>Categoria:</strong> ${escapeHtml(article.category)}</p>` : ''}
+                      <p>${escapeHtml(truncateAtWord(textContent, 1200))}</p>
+                      <p><a href="${canonicalUrl}">Leia o artigo completo no Deazons</a></p>
+                    </article>`,
+                }),
+                200,
+                's-maxage=3600, stale-while-revalidate=86400'
+              );
             }
           }
         } catch (err) {
@@ -542,78 +703,108 @@ export default async function handler(req, res) {
         }
       }
 
-      // Fallback: artigo não encontrado ou API indisponível — retorna HTML mínimo
-      const fallbackHtml = buildHTML({
-        title: `Notícia | Deazons`,
-        description: `Leia as últimas notícias de cinema e entretenimento no Deazons.`,
-        canonicalUrl,
-        bodyContent: `<h1>Notícia | Deazons</h1><p>Leia as últimas notícias de cinema e entretenimento no Deazons.</p><p><a href="${canonicalUrl}">Ver no Deazons</a></p>`
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=300');
-      return res.status(200).send(fallbackHtml);
+      return sendHtml(
+        res,
+        buildHTML({
+          title: 'Notícia não encontrada | Deazons',
+          description: 'O artigo solicitado não foi encontrado no Deazons.',
+          canonicalUrl,
+          noIndex: true,
+          bodyContent: `<h1>Notícia não encontrada</h1><p><a href="${BASE}/noticias">Ver notícias</a></p>`,
+        }),
+        404,
+        's-maxage=300'
+      );
     }
 
-    // ── 8. BLOG POSTS ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    // ── 8. BLOG POSTS ────────────────────────────────────────────────────────
     const blogMatch = urlPath.match(/^\/blog\/([^/?]+)/);
     if (blogMatch) {
       const postSlug = blogMatch[1];
-      const post = blogPosts.find(p => p.slug === postSlug);
-      const canonicalUrl = `https://deazons.com/blog/${postSlug}`;
+      const post = blogPosts.find((p: any) => p.slug === postSlug);
+      const canonicalUrl = `${BASE}/blog/${postSlug}`;
 
       if (post) {
         const images = imagesData[postSlug] || [];
-        const imageUrl = images.length > 0 ? images[0].url : 'https://deazons.com/deazons-logo.png';
+        const imageUrl = images.length > 0 ? images[0].url : DEFAULT_OG;
         const title = `${post.title} | Blog Deazons`;
-        const description = post.description;
+        const description = truncateAtWord(post.description || '', 160);
 
-        const jsonLd = JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "BlogPosting",
-          "headline": post.title,
-          "description": description,
-          "image": imageUrl ? [imageUrl] : [],
-          "datePublished": post.publishedAt,
-          "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl }
-        });
-
-        const html = buildHTML({
-          title,
+        const blogLd = {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: post.title,
           description,
-          imageUrl,
-          canonicalUrl,
-          jsonLd,
-          bodyContent: `
-            <article>
-              <h1>${escapeHtml(post.title)}</h1>
-              <p>${escapeHtml(description)}</p>
-              <p><a href="${canonicalUrl}">Leia o artigo no blog do Deazons</a></p>
-            </article>
-          `
-        });
+          image: imageUrl ? [imageUrl] : [],
+          datePublished: post.publishedAt,
+          dateModified: post.updatedAt || post.publishedAt,
+          author: { '@type': 'Organization', name: 'Deazons' },
+          publisher: {
+            '@type': 'Organization',
+            name: 'Deazons',
+            logo: { '@type': 'ImageObject', url: DEFAULT_OG },
+          },
+          mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+        };
 
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
-        return res.status(200).send(html);
+        return sendHtml(
+          res,
+          buildHTML({
+            title,
+            description,
+            imageUrl,
+            canonicalUrl,
+            ogType: 'article',
+            jsonLd: [
+              blogLd,
+              breadcrumbLd([
+                { name: 'Início', url: `${BASE}/` },
+                { name: 'Blog', url: `${BASE}/blog` },
+                { name: post.title, url: canonicalUrl },
+              ]),
+            ],
+            bodyContent: `<nav><a href="${BASE}/">Início</a> › <a href="${BASE}/blog">Blog</a> › ${escapeHtml(post.title)}</nav>
+              <article>
+                <h1>${escapeHtml(post.title)}</h1>
+                <p>${escapeHtml(description)}</p>
+                <p><a href="${canonicalUrl}">Leia o artigo no blog do Deazons</a></p>
+              </article>`,
+          })
+        );
       }
 
-      // Fallback: post não encontrado nos dados locais — retorna HTML mínimo
-      const fallbackHtml = buildHTML({
-        title: `Blog | Deazons`,
-        description: `Leia artigos, análises e curiosidades sobre cinema no Blog do Deazons.`,
-        canonicalUrl,
-        bodyContent: `<h1>Blog | Deazons</h1><p>Leia artigos, análises e curiosidades sobre cinema no Blog do Deazons.</p><p><a href="${canonicalUrl}">Ver no Deazons</a></p>`
-      });
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 's-maxage=300');
-      return res.status(200).send(fallbackHtml);
+      return sendHtml(
+        res,
+        buildHTML({
+          title: 'Post não encontrado | Deazons',
+          description: 'O post solicitado não foi encontrado no Blog do Deazons.',
+          canonicalUrl,
+          noIndex: true,
+          bodyContent: `<h1>Post não encontrado</h1><p><a href="${BASE}/blog">Ver blog</a></p>`,
+        }),
+        404,
+        's-maxage=300'
+      );
     }
 
-    // Fallback — bot acessou rota não reconhecida
-    return res.status(404).end();
-
+    // Unknown route for bots
+    return sendHtml(
+      res,
+      buildHTML({
+        title: 'Página não encontrada | Deazons',
+        description: 'A página solicitada não existe no Deazons.',
+        canonicalUrl: `${BASE}${urlPath}`,
+        noIndex: true,
+        bodyContent: `<h1>404</h1><p><a href="${BASE}/">Voltar ao início</a></p>`,
+      }),
+      404,
+      's-maxage=300'
+    );
   } catch (err) {
     console.error('Prerender error:', err);
     return res.status(500).end();
   }
 }
+
+// Keep helper referenced (UA gating is also in vercel.json)
+void isBot;

@@ -115,22 +115,33 @@ const NewsArticlePage = () => {
         image={article.image_url}
         type="article"
         canonicalOverride={`https://deazons.com/noticias/${article.slug}`}
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "NewsArticle",
-          "headline": article.title,
-          "description": article.meta_description,
-          "image": [article.image_url],
-          "datePublished": article.published_at || article.created_at,
-          "dateModified": article.updated_at || article.created_at,
-          "author": [{ "@type": "Organization", "name": "Equipe Deazons", "url": "https://deazons.com" }],
-          "publisher": {
-            "@type": "Organization",
-            "name": "Deazons",
-            "logo": { "@type": "ImageObject", "url": "https://deazons.com/deazons-logo.png" }
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "NewsArticle",
+            "headline": article.title,
+            "description": article.meta_description,
+            "image": [article.image_url],
+            "datePublished": article.published_at || article.created_at,
+            "dateModified": article.updated_at || article.created_at,
+            "author": [{ "@type": "Organization", "name": "Equipe Deazons", "url": "https://deazons.com" }],
+            "publisher": {
+              "@type": "Organization",
+              "name": "Deazons",
+              "logo": { "@type": "ImageObject", "url": "https://deazons.com/deazons-logo.png" }
+            },
+            "mainEntityOfPage": { "@type": "WebPage", "@id": `https://deazons.com/noticias/${article.slug}` }
           },
-          "mainEntityOfPage": { "@type": "WebPage", "@id": `https://deazons.com/noticias/${article.slug}` }
-        }}
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Início", item: "https://deazons.com/" },
+              { "@type": "ListItem", position: 2, name: "Notícias", item: "https://deazons.com/noticias" },
+              { "@type": "ListItem", position: 3, name: article.title, item: `https://deazons.com/noticias/${article.slug}` },
+            ],
+          },
+        ]}
       />
       <div className="max-w-[780px] mx-auto px-4 sm:px-6">
         {/* Navegação */}

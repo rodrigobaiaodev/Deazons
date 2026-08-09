@@ -151,32 +151,43 @@ const TVShowDetails = () => {
   const pageImg = getImageUrl(show.backdrop_path, BACKDROP_SIZES.ORIGINAL)
     || getImageUrl(show.poster_path, POSTER_SIZES.LARGE);
 
-  const showJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "TVSeries",
-    "name": show.name,
-    "description": pageDesc.substring(0, 300),
-    "image": pageImg,
-    "url": pageUrl,
-    ...(show.first_air_date && { "startDate": show.first_air_date }),
-    ...(show.last_air_date && { "endDate": show.last_air_date }),
-    "numberOfSeasons": show.number_of_seasons,
-    "numberOfEpisodes": show.number_of_episodes,
-    ...(creators.length > 0 && {
-      "creator": creators.map(c => ({ "@type": "Person", "name": c.name }))
-    }),
-    ...(show.genres?.length > 0 && {
-      "genre": show.genres.map(g => g.name)
-    }),
-    ...(show.vote_average > 0 && {
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": show.vote_average.toFixed(1),
-        "bestRating": "10",
-        "ratingCount": show.vote_count
-      }
-    })
-  };
+  const showJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "TVSeries",
+      "name": show.name,
+      "description": pageDesc.substring(0, 300),
+      "image": pageImg,
+      "url": pageUrl,
+      ...(show.first_air_date && { "startDate": show.first_air_date }),
+      ...(show.last_air_date && { "endDate": show.last_air_date }),
+      "numberOfSeasons": show.number_of_seasons,
+      "numberOfEpisodes": show.number_of_episodes,
+      ...(creators.length > 0 && {
+        "creator": creators.map(c => ({ "@type": "Person", "name": c.name }))
+      }),
+      ...(show.genres?.length > 0 && {
+        "genre": show.genres.map(g => g.name)
+      }),
+      ...(show.vote_average > 0 && {
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": show.vote_average.toFixed(1),
+          "bestRating": "10",
+          "ratingCount": show.vote_count
+        }
+      })
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Início", item: "https://deazons.com/" },
+        { "@type": "ListItem", position: 2, name: "Séries", item: "https://deazons.com/series" },
+        { "@type": "ListItem", position: 3, name: show.name, item: pageUrl },
+      ],
+    },
+  ];
 
   return (
     <div className="min-h-screen pb-10 pt-16">

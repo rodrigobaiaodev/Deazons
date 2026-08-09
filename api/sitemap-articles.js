@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   try {
     const apiRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/articles?status=eq.published&select=slug,published_at,created_at&order=published_at.desc`,
+      `${SUPABASE_URL}/rest/v1/articles?status=eq.published&select=slug,published_at,created_at,updated_at&order=published_at.desc`,
       {
         headers: {
           'apikey': ANON_KEY,
@@ -40,12 +40,12 @@ export default async function handler(req, res) {
     const today = new Date().toISOString().split('T')[0];
 
     const urls = articles.map(a => {
-      const lastmod = (a.published_at || a.created_at || today).split('T')[0];
+      const lastmod = (a.updated_at || a.published_at || a.created_at || today).split('T')[0];
       return `  <url>
     <loc>https://deazons.com/noticias/${a.slug}</loc>
     <lastmod>${lastmod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>`;
     }).join('\n');
 

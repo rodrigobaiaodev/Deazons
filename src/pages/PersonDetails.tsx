@@ -16,9 +16,11 @@ import MediaRow from "@/components/MediaRow";
 import { Film, Tv, Calendar, MapPin } from "lucide-react";
 import NotFound from "./NotFound";
 import SeoHead from "@/components/SeoHead";
+import { extractId, slugify } from "@/lib/slug";
 
 const PersonDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: idParam } = useParams<{ id: string }>();
+  const personIdNum = idParam ? extractId(idParam) : NaN;
   const { toast } = useToast();
   const [person, setPerson] = useState<PersonDetailsType | null>(null);
   const [movieCredits, setMovieCredits] = useState<{ cast: Movie[]; crew: Movie[] } | null>(null);
@@ -29,19 +31,21 @@ const PersonDetails = () => {
   
   useEffect(() => {
     const fetchPersonDetails = async () => {
-      if (!id) return;
+      if (!idParam || Number.isNaN(personIdNum)) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
         setError(null);
         setNotFound(false);
         
-        const personId = parseInt(id);
-        
         const [personData, personMovieCredits, personTVCredits] = await Promise.all([
-          tmdbAPI.getPersonDetails(personId),
-          tmdbAPI.getPersonMovieCredits(personId),
-          tmdbAPI.getPersonTVCredits(personId),
+          tmdbAPI.getPersonDetails(personIdNum),
+          tmdbAPI.getPersonMovieCredits(personIdNum),
+          tmdbAPI.getPersonTVCredits(personIdNum),
         ]);
         
         setPerson(personData);
@@ -66,10 +70,8 @@ const PersonDetails = () => {
       }
     };
     
-    if (id) {
-      fetchPersonDetails();
-    }
-  }, [id, toast]);
+    fetchPersonDetails();
+  }, [idParam, personIdNum, toast]);
   
   // Helper functions
   const formatDate = (dateStr: string | null) => {
@@ -138,12 +140,32 @@ const PersonDetails = () => {
   const sortedTVCast = tvCredits?.cast ? sortTVShowsByPopularity(tvCredits.cast) : [];
 
   // ── SEO computed values ──────────────────────────────────────────────────
-  const personUrl = `https://deazons.com/pessoas/${id}`;
+  const personUrl = `https://deazons.com/pessoas/${personIdNum}-${slugify(person.name)}`;
   const personTitle = `${person.name} | Deazons`;
   const personDesc = person.biography
     ? person.biography
     : `Conheça a biografia e filmografia de ${person.name} no Deazons.`;
   const personImg = getImageUrl(person.profile_path, PROFILE_SIZES.LARGE);
+  const personJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: person.name,
+      description: personDesc.substring(0, 300),
+      image: personImg,
+      url: personUrl,
+      ...(person.birthday && { birthDate: person.birthday }),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Início", item: "https://deazons.com/" },
+        { "@type": "ListItem", position: 2, name: "Pessoas", item: "https://deazons.com/pessoas" },
+        { "@type": "ListItem", position: 3, name: person.name, item: personUrl },
+      ],
+    },
+  ];
 
   return (
     <div className="min-h-screen pb-10 pt-24">
@@ -153,6 +175,7 @@ const PersonDetails = () => {
         image={personImg}
         type="profile"
         canonicalOverride={personUrl}
+        jsonLd={personJsonLd}
       />
       <div className="container">
         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">

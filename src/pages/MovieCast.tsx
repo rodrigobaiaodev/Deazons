@@ -10,26 +10,32 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import NotFound from "./NotFound";
+import SeoHead from "@/components/SeoHead";
+import { extractId, moviePath } from "@/lib/slug";
 
 const MovieCast = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
+  const movieId = slug ? extractId(slug) : NaN;
   const { toast } = useToast();
   const [credits, setCredits] = useState<Credits | null>(null);
   const [movieTitle, setMovieTitle] = useState<string>("");
+  const [movieSlugPath, setMovieSlugPath] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     const fetchMovieCast = async () => {
-      if (!id) return;
+      if (!slug || Number.isNaN(movieId)) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
         setError(null);
         setNotFound(false);
-        
-        const movieId = parseInt(id);
         
         const [creditsData, movieData] = await Promise.all([
           tmdbAPI.getMovieCredits(movieId),
@@ -38,6 +44,7 @@ const MovieCast = () => {
         
         setCredits(creditsData);
         setMovieTitle(movieData.title);
+        setMovieSlugPath(moviePath(movieId, movieData.title));
       } catch (err) {
         console.error("Error fetching movie cast:", err);
         
@@ -57,7 +64,7 @@ const MovieCast = () => {
     };
     
     fetchMovieCast();
-  }, [id, toast]);
+  }, [slug, movieId, toast]);
 
   if (notFound) {
     return <NotFound />;
@@ -76,7 +83,7 @@ const MovieCast = () => {
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <p className="text-xl text-destructive">{error}</p>
         <Button asChild>
-          <Link to={`/filmes/${id}`}>Back to Movie</Link>
+          <Link to={movieSlugPath || `/filmes/${movieId}`}>Back to Movie</Link>
         </Button>
       </div>
     );
@@ -88,13 +95,29 @@ const MovieCast = () => {
 
   // Get all unique departments
   const departments = [...new Set(crew.map(person => person.department))].sort();
+  const castUrl = `https://deazons.com${movieSlugPath}/cast`;
 
   return (
     <div className="min-h-screen pb-10 pt-24">
+      <SeoHead
+        title={`Elenco de ${movieTitle} | Deazons`}
+        description={`Veja o elenco, atores, atrizes e equipe técnica do filme ${movieTitle} no Deazons.`}
+        canonicalOverride={castUrl}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Início", item: "https://deazons.com/" },
+            { "@type": "ListItem", position: 2, name: "Filmes", item: "https://deazons.com/filmes" },
+            { "@type": "ListItem", position: 3, name: movieTitle, item: `https://deazons.com${movieSlugPath}` },
+            { "@type": "ListItem", position: 4, name: "Elenco", item: castUrl },
+          ],
+        }}
+      />
       <div className="container">
         <div className="mb-8">
           <Button variant="ghost" asChild className="mb-4 -ml-3 gap-1">
-            <Link to={`/filmes/${id}`}>
+            <Link to={movieSlugPath || `/filmes/${movieId}`}>
               <ArrowLeft size={16} />
               Back to Movie
             </Link>

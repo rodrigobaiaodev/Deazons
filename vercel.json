@@ -8,6 +8,10 @@
   ],
   "routes": [
     {
+      "src": "^/sitemap-articles\\.xml$",
+      "dest": "/api/sitemap-articles"
+    },
+    {
       "src": "^/sitemap(-index|-[a-zA-Z0-9_-]+)?\\.xml$",
       "headers": {
         "Content-Type": "application/xml; charset=utf-8",
@@ -37,7 +41,7 @@
       "continue": true
     },
     {
-      "src": "^/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|atores(?:/.*)?|pessoas(?:/.*)?|noticias(?:/.*)?|search(?:/.*)?|sobre|privacidade|termos|contato)?$",
+      "src": "^/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|pessoas(?:/.*)?|noticias(?:/.*)?|sobre|privacidade|termos|contato)?$",
       "headers": {
         "Cache-Control": "public, max-age=300, must-revalidate",
         "Vary": "User-Agent"
@@ -45,25 +49,18 @@
       "continue": true
     },
     {
-      "src": "^/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|atores(?:/.*)?|pessoas(?:/.*)?|noticias(?:/.*)?|search(?:/.*)?|sobre|privacidade|termos|contato)?$",
+      "src": "^/(filmes(?:/.*)?|series(?:/.*)?|blog(?:/.*)?|pessoas(?:/.*)?|noticias(?:/.*)?|sobre|privacidade|termos|contato)?$",
       "has": [
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot).*"
+          "value": "(?i).*(googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|mediapartners-google).*"
         }
       ],
       "dest": "/api/prerender?url=/$1"
     },
     {
       "handle": "filesystem"
-    },
-    {
-      "src": "^/api/sitemap-articles$",
-      "status": 308,
-      "headers": {
-        "Location": "/sitemap-articles.xml"
-      }
     },
     {
       "src": "^/(.*)$",

@@ -147,29 +147,40 @@ const MovieDetails = () => {
   const pageImg = getImageUrl(movie.backdrop_path, BACKDROP_SIZES.ORIGINAL)
     || getImageUrl(movie.poster_path, POSTER_SIZES.LARGE);
 
-  const movieJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Movie",
-    "name": movie.title,
-    "description": pageDesc.substring(0, 300),
-    "image": pageImg,
-    "datePublished": movie.release_date,
-    "url": pageUrl,
-    ...(directors.length > 0 && {
-      "director": directors.map(d => ({ "@type": "Person", "name": d.name }))
-    }),
-    ...(movie.genres?.length > 0 && {
-      "genre": movie.genres.map(g => g.name)
-    }),
-    ...(movie.vote_average > 0 && {
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": movie.vote_average.toFixed(1),
-        "bestRating": "10",
-        "ratingCount": movie.vote_count
-      }
-    })
-  };
+  const movieJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Movie",
+      "name": movie.title,
+      "description": pageDesc.substring(0, 300),
+      "image": pageImg,
+      "datePublished": movie.release_date,
+      "url": pageUrl,
+      ...(directors.length > 0 && {
+        "director": directors.map(d => ({ "@type": "Person", "name": d.name }))
+      }),
+      ...(movie.genres?.length > 0 && {
+        "genre": movie.genres.map(g => g.name)
+      }),
+      ...(movie.vote_average > 0 && {
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": movie.vote_average.toFixed(1),
+          "bestRating": "10",
+          "ratingCount": movie.vote_count
+        }
+      })
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Início", item: "https://deazons.com/" },
+        { "@type": "ListItem", position: 2, name: "Filmes", item: "https://deazons.com/filmes" },
+        { "@type": "ListItem", position: 3, name: movie.title, item: pageUrl },
+      ],
+    },
+  ];
 
   return (
     <div className="min-h-screen pb-10 pt-16">
