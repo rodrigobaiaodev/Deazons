@@ -123,7 +123,7 @@ const NewsArticlePage = () => {
             "description": article.meta_description,
             "image": [article.image_url],
             "datePublished": article.published_at || article.created_at,
-            "dateModified": article.updated_at || article.created_at,
+            "dateModified": article.updated_at || article.published_at || article.created_at,
             "author": [{ "@type": "Organization", "name": "Equipe Deazons", "url": "https://deazons.com" }],
             "publisher": {
               "@type": "Organization",

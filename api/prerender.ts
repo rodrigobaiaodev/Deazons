@@ -631,7 +631,7 @@ export default async function handler(req: any, res: any) {
 
       if (SUPABASE_URL && SUPABASE_KEY) {
         try {
-          const apiUrl = `${SUPABASE_URL}/rest/v1/articles?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=title,meta_description,image_url,content,published_at,updated_at,category,tags&limit=1`;
+          const apiUrl = `${SUPABASE_URL}/rest/v1/articles?slug=eq.${encodeURIComponent(slug)}&status=eq.published&select=title,meta_description,image_url,content,published_at,created_at,category,tags&limit=1`;
           const response = await fetch(apiUrl, {
             headers: {
               apikey: SUPABASE_KEY,
@@ -659,7 +659,7 @@ export default async function handler(req: any, res: any) {
                 description,
                 image: article.image_url ? [article.image_url] : [],
                 datePublished: article.published_at,
-                dateModified: article.updated_at || article.published_at,
+                dateModified: article.published_at || article.created_at,
                 author: { '@type': 'Organization', name: 'Deazons' },
                 publisher: {
                   '@type': 'Organization',
