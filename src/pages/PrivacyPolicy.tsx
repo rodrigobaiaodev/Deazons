@@ -32,6 +32,17 @@ const PrivacyPolicy = () => {
               <strong>Cookies e tecnologias semelhantes:</strong> Utilizamos cookies e tecnologias similares para 
               melhorar sua experiência, analisar o tráfego e personalizar o conteúdo.
             </p>
+            <p>
+              <strong>Google Analytics:</strong> Utilizamos o Google Analytics (propriedade <code>G-KSCKH5X0P6</code>) 
+              para medir audiência e desempenho das páginas. O Google pode processar dados de uso conforme a 
+              política de privacidade do Google. Você pode restringir cookies pelo banner do site ou pelas 
+              configurações do navegador.
+            </p>
+            <p>
+              <strong>Publicidade:</strong> Quando o site participar de redes de anúncios (incluindo Google AdSense), 
+              cookies de publicidade podem ser usados para exibir anúncios e medir desempenho. Parceiros de anúncio 
+              serão listados no arquivo <code>ads.txt</code> na raiz do domínio.
+            </p>
           </section>
           
           <section>
@@ -67,10 +78,19 @@ const PrivacyPolicy = () => {
           </section>
           
           <section>
-            <h2 className="text-xl font-semibold mb-3">6. Seus Direitos</h2>
+            <h2 className="text-xl font-semibold mb-3">6. Seus Direitos (LGPD)</h2>
             <p>
-              Você tem o direito de acessar, corrigir ou excluir seus dados pessoais. Para exercer estes direitos, 
-              entre em contato conosco através dos meios fornecidos abaixo.
+              Nos termos da Lei Geral de Proteção de Dados (LGPD), você pode solicitar acesso, correção, 
+              anonimização, portabilidade ou exclusão de dados pessoais relacionados ao uso do Deazons, 
+              bem como informações sobre o tratamento. Para exercer estes direitos, envie um e-mail para{' '}
+              <a href="mailto:contato@deazons.com.br" className="text-deazon-400 hover:text-deazon-300">
+                contato@deazons.com.br
+              </a>{' '}
+              ou use a{' '}
+              <Link to="/contato" className="text-deazon-400 hover:text-deazon-300">
+                página de contato
+              </Link>
+              .
             </p>
           </section>
           
@@ -94,7 +114,7 @@ const PrivacyPolicy = () => {
         </div>
         
         <div className="mt-10 text-sm text-muted-foreground">
-          <p>Última atualização: 20 de Abril de 2025</p>
+          <p>Última atualização: 9 de Agosto de 2026</p>
         </div>
       </div>
     </div>

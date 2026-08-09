@@ -71,6 +71,36 @@ function escapeHtml(str = '') {
     .replace(/'/g, '&#039;');
 }
 
+/** Allow safe HTML tags for bot-readable full article bodies (Discover / indexing) */
+function sanitizeHtmlForBot(html = '') {
+  let out = String(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+
+  out = out.replace(/<(?!\/?(?:p|h2|h3|ul|ol|li|blockquote|strong|em|b|i|br|figure|figcaption|img|a)(?:\s|>|\/))/gi, '&lt;');
+
+  out = out.replace(/<img\b([^>]*)>/gi, (_, attrs) => {
+    const src = (attrs.match(/\bsrc=["']([^"']+)["']/i) || [])[1];
+    if (!src || /^javascript:/i.test(src)) return '';
+    const alt = (attrs.match(/\balt=["']([^"']*)["']/i) || [])[1] || '';
+    return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" />`;
+  });
+
+  out = out.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (_, attrs, text) => {
+    const href = (attrs.match(/\bhref=["']([^"']+)["']/i) || [])[1] || '';
+    const plain = text.replace(/<[^>]+>/g, '');
+    if (href.startsWith('/') || /^https?:\/\/(www\.)?deazons\.com/i.test(href)) {
+      const path = href.startsWith('/') ? href : href.replace(/^https?:\/\/(www\.)?deazons\.com/i, '');
+      return `<a href="${escapeHtml(path)}">${escapeHtml(plain)}</a>`;
+    }
+    return escapeHtml(plain);
+  });
+
+  return out;
+}
+
 function slugify(text: string): string {
   return String(text || '')
     .toLowerCase()
@@ -104,7 +134,7 @@ function buildHTML({
   bodyContent,
   ogType = 'website',
   noIndex = false,
-  statusHint,
+  publishedTime,
 }: {
   title: string;
   description: string;
@@ -114,7 +144,7 @@ function buildHTML({
   bodyContent: string;
   ogType?: string;
   noIndex?: boolean;
-  statusHint?: number;
+  publishedTime?: string | null;
 }) {
   const desc = truncateAtWord(description, 160);
   const img = imageUrl || DEFAULT_OG;
@@ -123,6 +153,10 @@ function buildHTML({
     const payload = typeof jsonLd === 'string' ? jsonLd : JSON.stringify(jsonLd);
     ldBlock = `<script type="application/ld+json">${payload}</script>`;
   }
+  const publishedMeta = publishedTime
+    ? `<meta property="article:published_time" content="${escapeHtml(publishedTime)}" />
+  <meta property="article:modified_time" content="${escapeHtml(publishedTime)}" />`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -142,6 +176,7 @@ function buildHTML({
   <meta property="og:type" content="${ogType}" />
   <meta property="og:site_name" content="Deazons" />
   <meta property="og:locale" content="pt_BR" />
+  ${publishedMeta}
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@deazons" />
   <meta name="twitter:title" content="${escapeHtml(title)}" />
@@ -677,6 +712,7 @@ export default async function handler(req: any, res: any) {
                   imageUrl: article.image_url,
                   canonicalUrl,
                   ogType: 'article',
+                  publishedTime: article.published_at || article.created_at,
                   jsonLd: [
                     articleLd,
                     breadcrumbLd([
@@ -688,9 +724,10 @@ export default async function handler(req: any, res: any) {
                   bodyContent: `<nav><a href="${BASE}/">Início</a> › <a href="${BASE}/noticias">Notícias</a> › ${escapeHtml(article.title)}</nav>
                     <article>
                       <h1>${escapeHtml(article.title)}</h1>
+                      ${article.image_url ? `<p><img src="${escapeHtml(article.image_url)}" alt="${escapeHtml(article.title)}" width="1200" height="630" /></p>` : ''}
                       ${article.category ? `<p><strong>Categoria:</strong> ${escapeHtml(article.category)}</p>` : ''}
-                      <p>${escapeHtml(truncateAtWord(textContent, 1200))}</p>
-                      <p><a href="${canonicalUrl}">Leia o artigo completo no Deazons</a></p>
+                      ${article.published_at ? `<p><time datetime="${escapeHtml(article.published_at)}">${escapeHtml(article.published_at.split('T')[0])}</time></p>` : ''}
+                      <div class="article-body">${sanitizeHtmlForBot(article.content || '')}</div>
                     </article>`,
                 }),
                 200,

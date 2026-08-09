@@ -16,19 +16,25 @@ const Contact = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Form submission simulation
-    setTimeout(() => {
-      toast({
-        title: "Mensagem enviada",
-        description: "Obrigado por nos contatar. Responderemos em breve.",
-      });
-      setName("");
-      setEmail("");
-      setSubject("");
-      setMessage("");
-      setIsSubmitting(false);
-    }, 1500);
+
+    const body = [
+      `Nome: ${name}`,
+      `E-mail: ${email}`,
+      '',
+      message,
+    ].join('\n');
+
+    const mailto = `mailto:contato@deazons.com.br?subject=${encodeURIComponent(
+      subject || 'Contato via Deazons'
+    )}&body=${encodeURIComponent(body)}`;
+
+    window.location.href = mailto;
+
+    toast({
+      title: "Abrindo seu e-mail",
+      description: "Se o app de e-mail não abrir, escreva para contato@deazons.com.br",
+    });
+    setIsSubmitting(false);
   };
   
   return (
@@ -51,22 +57,11 @@ const Contact = () => {
             <div className="space-y-4">
               <div>
                 <h3 className="font-medium mb-2">E-mail</h3>
-                <p className="text-muted-foreground">contato@deazons.com.br</p>
-              </div>
-              
-              <div>
-                <h3 className="font-medium mb-2">Redes Sociais</h3>
-                <div className="flex space-x-4">
-                  <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                    Twitter
+                <p className="text-muted-foreground">
+                  <a href="mailto:contato@deazons.com.br" className="hover:text-primary transition-colors">
+                    contato@deazons.com.br
                   </a>
-                  <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                    Instagram
-                  </a>
-                  <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                    Facebook
-                  </a>
-                </div>
+                </p>
               </div>
             </div>
           </div>
