@@ -94,6 +94,11 @@ const NewsArticlePage = () => {
   if (!article) {
     return (
       <div className="min-h-screen pt-32 pb-20 flex flex-col items-center justify-center -mt-20">
+        <SeoHead
+          title="Artigo não encontrado | Deazons"
+          description="O artigo solicitado não foi encontrado no Deazons."
+          noIndex
+        />
         <h2 className="text-2xl font-bold mb-4">Artigo não encontrado</h2>
         <Button onClick={() => navigate("/noticias")} variant="default">
           Voltar para Notícias
@@ -189,6 +194,21 @@ const NewsArticlePage = () => {
           </div>
         </header>
 
+        {/* Capa do artigo — essencial para SEO/AdSense e compartilhamento */}
+        {article.image_url && (
+          <figure className="mb-10 -mx-0">
+            <img
+              src={article.image_url}
+              alt={article.image_alt || article.title}
+              width={1280}
+              height={720}
+              className="w-full max-h-[480px] object-cover rounded-2xl border border-border/30 shadow-lg"
+              fetchPriority="high"
+              decoding="async"
+            />
+          </figure>
+        )}
+
         {/* Table of Contents - SEO Booster & UX */}
         {toc.length > 0 && (
           <div className="mb-10 p-6 rounded-2xl bg-secondary/10 border border-border/50">
@@ -214,10 +234,10 @@ const NewsArticlePage = () => {
           </div>
         )}
 
-        {/* Anúncio */}
+        {/* Anúncio após capa + TOC (não imediatamente sob o título) */}
         <div className="my-8" dangerouslySetInnerHTML={{ __html: '<div joinadscode="Content1" refresh="true" lazyload="true"></div>' }} />
 
-        {/* Conteúdo Renderizado a partir do Gemini com Estilização Premium */}
+        {/* Conteúdo parafraseado */}
         <div 
           className="prose prose-invert prose-lg max-w-none 
             prose-h1:hidden

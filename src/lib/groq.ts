@@ -7,36 +7,43 @@ export const GROQ_MODEL = 'llama-3.3-70b-versatile';
 export const rewriteArticlePrompt = (
   title: string,
   content: string,
-  imageUrl?: string | null,
-  // Parâmetros mantidos para compatibilidade mas não usados mais
+  _imageUrl?: string | null,
   _extraImageUrl1?: string | null,
   _extraImageUrl2?: string | null
-) => `Você é um redator sênior do portal de entretenimento "Deazons" (Brasil).
-Reescreva o artigo abaixo em português brasileiro de forma 100% original, autoritativa e otimizada para SEO e AdSense.
+) => {
+  const plain = content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const originalWords = plain ? plain.split(/\s+/).length : 0;
+  const minWords = Math.max(220, Math.min(500, Math.floor(originalWords * 0.75) || 220));
 
-REGRAS OBRIGATÓRIAS:
-1. Mínimo de 900 palavras. Expanda com contexto histórico, curiosidades, impacto cultural, bilheteria e perspectivas futuras.
-2. Tom envolvente, opinativo e "nerd" profissional.
-3. Exatamente 4 subtítulos <h2> com palavras-chave relevantes para SEO.
-4. NÃO mencione o site de origem do conteúdo.
-5. NÃO inclua nenhuma tag <img> no conteúdo — a imagem de capa é inserida automaticamente pelo sistema.
-6. NÃO inclua o <h1> no campo "content" — ele é renderizado separadamente pelo frontend.
-7. O campo "content" deve conter apenas: parágrafos <p>, subtítulos <h2>, e listas <ul>/<li> quando apropriado.
+  return `Você é um editor do portal brasileiro "Deazons" (cinema, séries e cultura pop).
+PARAFASEIE o artigo abaixo em português do Brasil (AdSense / anti-plágio).
 
-FORMATO DE RETORNO — responda APENAS com JSON válido (sem blocos de código markdown, sem \`\`\`):
+OBJETIVO:
+- Manter o MESMO contexto, fatos, ordem e estrutura.
+- Reescrever TODO o texto com outras palavras.
+- NÃO inventar fatos nem expandir com opinião inventada.
+- NÃO mencionar o site de origem.
+
+REGRAS:
+1. Mínimo ~${minWords} palavras (original ~${originalWords}). Fique perto do tamanho original.
+2. HTML limpo: <p>, <h2>, <h3>, <ul>, <li>, <blockquote>, <figure>, <img> (só src/alt).
+3. Remova links externos; pode manter 2 links internos naturais para /noticias, /filmes, /series ou /blog.
+4. Preserve imagens do original na mesma posição relativa.
+5. Sem <h1> no content.
+6. meta_description 145–160 caracteres.
+
+Responda APENAS JSON válido:
 {
-  "title": "Título reescrito, chamativo e com palavra-chave principal",
+  "title": "Título parafraseado",
   "slug": "titulo-em-kebab-case-sem-acentos",
-  "meta_description": "Descrição entre 150-160 caracteres com palavra-chave principal",
+  "meta_description": "Descrição 145-160 chars",
   "tags": ["tag1", "tag2", "tag3"],
   "category": "Uma de: Cinema, Séries, Marvel, DC, Lançamentos, Cultura Pop, Streaming, Anime",
-  "content": "<p>Introdução impactante...</p><h2>Subtítulo 1 com palavra-chave</h2><p>Conteúdo...</p><h2>Subtítulo 2</h2><p>Conteúdo...</p><h2>Subtítulo 3</h2><p>Conteúdo...</p><h2>Conclusão e Perspectivas</h2><p>Fechamento...</p>"
+  "content": "<p>...</p>"
 }
 
--- 
-NOTÍCIA ORIGINAL:
 Título: ${title}
-
 Conteúdo:
-${content.substring(0, 3000)}
+${content.substring(0, 12000)}
 `;
+};

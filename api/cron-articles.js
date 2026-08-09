@@ -92,7 +92,7 @@ function extractImage(item) {
   if (item.enclosure?.link) return item.enclosure.link;
   if (item.thumbnail) return item.thumbnail;
   const content = item.content || item.description || '';
-  const m = content.match(/<img[^>]+src="([^">]+)"/);
+  const m = content.match(/<img[^>]+src=["']([^"']+)["']/i);
   return m ? m[1] : null;
 }
 
@@ -123,67 +123,120 @@ function parseAIResponse(text) {
   } catch { return null; }
 }
 
-/** Remove TODAS as tags <img> do HTML para evitar imagens repetidas no corpo */
-function stripImagesFromContent(html) {
-  return html
-    .replace(/<img[^>]*>/gi, '')
-    .replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+function countWords(htmlOrText) {
+  return String(htmlOrText || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
 }
 
-// Links internos do site para usar no conteúdo (AdSense-friendly)
+/** Sanitize paraphrased HTML for AdSense-safe pages */
+function sanitizeArticleHtml(html) {
+  let out = String(html || '');
+
+  // Drop scripts/iframes/forms
+  out = out
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<form[\s\S]*?<\/form>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '');
+
+  // Strip attributes except src/alt/href on allowed tags
+  out = out.replace(/<(p|h2|h3|ul|ol|li|blockquote|strong|em|b|i|br|figure|figcaption)(\s[^>]*)?>/gi, '<$1>');
+  out = out.replace(/<img\b([^>]*)>/gi, (_, attrs) => {
+    const src = (attrs.match(/\bsrc=["']([^"']+)["']/i) || [])[1];
+    if (!src || /^data:/i.test(src)) return '';
+    const alt = (attrs.match(/\balt=["']([^"']*)["']/i) || [])[1] || '';
+    return `<img src="${src}" alt="${alt.replace(/"/g, '')}" loading="lazy" />`;
+  });
+  out = out.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (_, attrs, text) => {
+    const href = (attrs.match(/\bhref=["']([^"']+)["']/i) || [])[1] || '';
+    const plain = text.replace(/<[^>]+>/g, '');
+    // Keep only internal Deazons links
+    if (/^https?:\/\/(www\.)?deazons\.com(\/|$)/i.test(href) || href.startsWith('/')) {
+      const path = href.startsWith('/') ? href : href.replace(/^https?:\/\/(www\.)?deazons\.com/i, '');
+      return `<a href="${path}">${plain}</a>`;
+    }
+    return plain;
+  });
+
+  // Remove empty tags / excess whitespace
+  out = out
+    .replace(/<p>\s*<\/p>/gi, '')
+    .replace(/<figure>\s*<\/figure>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return out;
+}
+
+function extractImagesFromHtml(html) {
+  const urls = [];
+  const re = /<img[^>]+src=["']([^"']+)["']/gi;
+  let m;
+  while ((m = re.exec(html || '')) !== null) {
+    if (m[1] && !/^data:/i.test(m[1])) urls.push(m[1]);
+  }
+  return urls;
+}
+
+// Links internos do site (navegação / AdSense value)
 const INTERNAL_LINKS = [
-  { href: '/noticias',       label: 'mais notícias de cinema e séries' },
-  { href: '/filmes',         label: 'filmes em destaque' },
-  { href: '/series',         label: 'séries imperdíveis' },
-  { href: '/blog',           label: 'nosso blog de cultura pop' },
-  { href: '/noticias',       label: 'últimas notícias do mundo do entretenimento' },
+  { href: '/noticias', label: 'mais notícias de cinema e séries' },
+  { href: '/filmes',   label: 'filmes em destaque' },
+  { href: '/series',   label: 'séries imperdíveis' },
+  { href: '/blog',     label: 'nosso blog de cultura pop' },
 ];
 
 function pickInternalLinks() {
-  // Seleciona 2 links internos aleatórios distintos
   const shuffled = [...INTERNAL_LINKS].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, 2);
 }
 
 function buildPrompt(title, rawContent) {
-  // Preserva o HTML original completo (com imagens, estrutura)
   const originalHtml = rawContent.trim().slice(0, 15000);
+  const originalWords = countWords(originalHtml);
   const [link1, link2] = pickInternalLinks();
+  const minWords = Math.max(220, Math.min(500, Math.floor(originalWords * 0.75)));
 
-  return `Você é um editor sênior do portal brasileiro "Deazons" (especializado em cultura pop, cinema e séries).
-Sua tarefa é REESCREVER o artigo abaixo com profundidade editorial — NÃO apenas parafrasear a sinopse.
+  return `Você é um editor do portal brasileiro "Deazons" (cinema, séries e cultura pop).
+Sua ÚNICA tarefa: PARAFASEAR o artigo abaixo em português do Brasil para publicação própria (AdSense / anti-plágio).
 
-REGRAS ABSOLUTAS — siga TODAS rigorosamente:
-1. PROFUNDIDADE MÍNIMA: o campo "content" deve ter NO MÍNIMO 450 palavras de texto único (conte sem tags HTML). Se o original for curto, EXPANDA com contexto cultural, impacto na indústria, comparação com obras relacionadas e análise — sem inventar fatos falsos (datas, elenco, bilheteria).
-2. ESTRUTURA OBRIGATÓRIA no HTML (nessa ordem):
-   - Introdução (1–2 <p>) contextualizando o tema
-   - Pelo menos 3 subtítulos <h2> cobrindo: análise/contexto, detalhes relevantes (produção, elenco, streaming), e conclusão/impacto
-   - Conclusão clara com takeaway para o leitor
-3. GERE HTML LIMPO E SEMÂNTICO: Use apenas tags limpas (<p>, <h2>, <h3>, <ul>, <li>, <blockquote>). OBRIGATÓRIO: Remova TODOS os atributos "class", "id" e "style". Não use formatações inline.
-4. IMAGENS: Mantenha as tags <img> originais com APENAS "src" e "alt". Remova width, height, class e style.
-5. REMOVA todos os links externos (<a href> para outros domínios) — substitua pelo texto âncora simples.
-6. ADICIONE exatamente 2 links internos naturais no corpo do texto:
-   - Link A: <a href="${link1.href}">${link1.label}</a>
-   - Link B: <a href="${link2.href}">${link2.label}</a>
-7. Parágrafos curtos (2 a 4 frases). Texto escaneável para celular.
-8. O título pode ser levemente reescrito para ficar mais chamativo, mantendo o sentido.
-9. NÃO inclua o <h1> no campo "content".
-10. meta_description: 145–160 caracteres, única, sem cortar palavra no meio.
+OBJETIVO:
+- Manter o MESMO contexto, fatos, ordem e estrutura do original.
+- Reescrever TODO o texto visível com outras palavras (sinônimos, frases novas).
+- NÃO inventar fatos, datas, elenco, bilheteria, citações ou análises que não estejam no original.
+- NÃO expandir com "opinião editorial" inventada. Se o original for curto, o resultado também pode ser curto — só parafraseie o que existe.
 
-FORMATO DE RETORNO — responda APENAS com JSON válido (sem markdown, sem \`\`\`):
+REGRAS ABSOLUTAS:
+1. COMPRIMENTO: o "content" deve ter no mínimo ~${minWords} palavras (o original tem ~${originalWords}). Fique perto do tamanho original (±25%), sem enrolação artificial.
+2. ESTRUTURA: preserve a hierarquia do original (parágrafos e subtítulos). Se o original tiver seções, use <h2>/<h3> equivalentes com títulos parafraseados.
+3. HTML LIMPO: apenas <p>, <h2>, <h3>, <ul>, <li>, <blockquote>, <figure>, <img>. Remova class, id, style e qualquer atributo inútil.
+4. IMAGENS: mantenha as <img> do original na mesma posição relativa, com APENAS src e alt. Não invente URLs de imagem.
+5. LINKS EXTERNOS: remova todos (deixe só o texto âncora).
+6. LINKS INTERNOS: inclua exatamente 2 links naturais no corpo:
+   - <a href="${link1.href}">${link1.label}</a>
+   - <a href="${link2.href}">${link2.label}</a>
+7. Parágrafos curtos (2–4 frases), legíveis no celular.
+8. Título: pode ser levemente reescrito, mantendo o sentido (sem clickbait falso).
+9. NÃO inclua <h1> no "content" (o site já renderiza o título).
+10. NÃO mencione o site de origem, "segundo a matéria", "fonte original", etc.
+11. meta_description: 145–160 caracteres, única, sem cortar palavra no meio.
+
+FORMATO — responda APENAS JSON válido (sem markdown):
 {
-  "title": "Título editorial e chamativo",
+  "title": "Título parafraseado",
   "slug": "titulo-em-kebab-case-sem-acentos",
-  "meta_description": "Descrição de 145-160 caracteres baseada no artigo reescrito.",
+  "meta_description": "Descrição de 145-160 caracteres.",
   "tags": ["tag1", "tag2", "tag3"],
   "category": "Uma de: Cinema, Séries, Marvel, DC, Lançamentos, Cultura Pop, Streaming, Anime",
-  "content": "<p>HTML rico com introdução, h2s, análise e conclusão...</p>",
-  "word_count": 450
+  "content": "<p>...</p>",
+  "word_count": ${minWords}
 }
 
-ARTIGO ORIGINAL PARA REESCREVER:
+ARTIGO ORIGINAL PARA PARAFRASEAR:
 Título: ${title}
 Conteúdo HTML: ${originalHtml}`;
 }
@@ -328,8 +381,8 @@ async function callGroq(groqKey, prompt) {
   const body = {
     model: 'llama-3.3-70b-versatile',
     messages: [{ role: 'user', content: prompt }],
-    temperature: 0.75,
-    max_tokens: 4096
+    temperature: 0.55,
+    max_tokens: 6000
   };
   const res = await fetch(url, {
     method: 'POST',
@@ -429,33 +482,41 @@ export default async function handler(req, res) {
 
         log(`  ✏️  Processando (${articlesCreated + 1}/${MAX_ARTICLES_PER_RUN}): ${item.title.substring(0, 50)}`);
 
-        let finalContent = item.content || item.description || '';
-        if (rawText.length < 1500) {
-          log(`  🔍 RSS curto (${rawText.length} chars) — buscando URL...`);
+        let sourceHtml = item.content || item.description || '';
+        // Prefer full article page when RSS is thin or missing body images
+        const sourceWords = countWords(sourceHtml);
+        const sourceImgs = extractImagesFromHtml(sourceHtml);
+        if (sourceWords < 400 || sourceImgs.length === 0) {
+          log(`  🔍 Buscando HTML completo da URL (words=${sourceWords}, imgs=${sourceImgs.length})...`);
           const fullHtml = await fetchFullContent(item.link);
-          if (fullHtml) finalContent = fullHtml;
+          if (fullHtml && countWords(fullHtml) >= sourceWords) {
+            sourceHtml = fullHtml;
+          }
         }
 
-        const finalText = finalContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        if (finalText.length < 300) {
-          log(`  ⏭️  Ignorado (mesmo após fetch, insuficiente: ${finalText.length} chars)`);
+        const finalTextLen = sourceHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length;
+        if (finalTextLen < 300) {
+          log(`  ⏭️  Ignorado (mesmo após fetch, insuficiente: ${finalTextLen} chars)`);
           continue;
         }
-        log(`  📄 Conteúdo total disponível para paráfrase: ${finalText.length} chars`);
+        const originalWords = countWords(sourceHtml);
+        log(`  📄 Fonte para paráfrase: ${originalWords} palavras`);
 
-        let imageUrl = null;
-        if (TMDB_KEY) {
+        // Capa: prioriza imagem do artigo/RSS; TMDB só como fallback contextual
+        const fromSource =
+          extractImage(item) ||
+          extractImagesFromHtml(sourceHtml)[0] ||
+          null;
+        let imageUrl = fromSource;
+        if (!imageUrl && TMDB_KEY) {
           imageUrl = await getTMDBImage(item.title, TMDB_KEY);
         }
-        if (!imageUrl) {
-          imageUrl = extractImage(item);
-        }
-        // Fallback final: imagem genérica de cinema
         if (!imageUrl) {
           imageUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1280&auto=format&fit=crop';
         }
 
-        const prompt = buildPrompt(item.title, finalContent);
+        const prompt = buildPrompt(item.title, sourceHtml);
+        const minWords = Math.max(220, Math.min(500, Math.floor(originalWords * 0.75)));
 
         let articleData = null;
         try {
@@ -467,7 +528,6 @@ export default async function handler(req, res) {
           }
         } catch (err) {
           log(`  ❌ Erro Groq: ${err.message}`);
-          // Aguarda mais tempo se for rate limit
           if (err.message.includes('429')) {
             log(`  ⏳ Rate limit — aguardando 30s...`);
             await new Promise(r => setTimeout(r, 30000));
@@ -475,32 +535,46 @@ export default async function handler(req, res) {
           continue;
         }
 
-        // Conteúdo gerado pela IA (evita redeclarar finalContent do bloco anterior)
-        let rewrittenHtml = articleData.content || '';
-        const rewrittenWords = rewrittenHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(/\s+/).filter(Boolean).length;
-        if (rewrittenWords < 300) {
-          log(`  ⏭️  Ignorado (thin content: ${rewrittenWords} palavras; mínimo 300)`);
+        let rewrittenHtml = sanitizeArticleHtml(articleData.content || '');
+        const rewrittenWords = countWords(rewrittenHtml);
+        if (rewrittenWords < minWords) {
+          log(`  ⏭️  Ignorado (thin/paráfrase curta: ${rewrittenWords} palavras; mínimo ${minWords})`);
           continue;
         }
-        log(`  📝 Conteúdo reescrito: ${rewrittenWords} palavras`);
+        log(`  📝 Paráfrase OK: ${rewrittenWords} palavras (mín. ${minWords})`);
 
-        // Injeta imagem de capa (TMDB) apenas se não estiver já no conteúdo
-        if (imageUrl && !rewrittenHtml.includes(imageUrl)) {
-          const cover = `<figure><img src="${imageUrl}" alt="${articleData.title || item.title}" /></figure>`;
-          const firstP = rewrittenHtml.indexOf('</p>');
-          if (firstP !== -1) {
-            rewrittenHtml = rewrittenHtml.substring(0, firstP + 4) + '\n' + cover + '\n' + rewrittenHtml.substring(firstP + 4);
-          } else {
-            rewrittenHtml = cover + '\n' + rewrittenHtml;
+        // Se a IA dropou as imagens do original, reinsere as do source no meio do texto
+        if (extractImagesFromHtml(rewrittenHtml).length === 0) {
+          const imgs = extractImagesFromHtml(sourceHtml).slice(0, 3);
+          if (imgs.length) {
+            const figures = imgs
+              .map((src, i) => `<figure><img src="${src}" alt="${(articleData.title || item.title).replace(/"/g, '')} — imagem ${i + 1}" loading="lazy" /></figure>`)
+              .join('\n');
+            const firstP = rewrittenHtml.indexOf('</p>');
+            rewrittenHtml =
+              firstP !== -1
+                ? rewrittenHtml.slice(0, firstP + 4) + '\n' + figures + '\n' + rewrittenHtml.slice(firstP + 4)
+                : figures + '\n' + rewrittenHtml;
+            rewrittenHtml = sanitizeArticleHtml(rewrittenHtml);
           }
         }
+
+        // Capa fica em image_url (hero no frontend) — não duplicar no corpo se for a mesma URL
+        // (imagens extras do artigo permanecem no HTML)
+
         const finalSlug = slugify(articleData.slug || articleData.title || item.title);
+        let meta = (articleData.meta_description || '').trim();
+        if (meta.length > 160) {
+          const cut = meta.slice(0, 157);
+          const sp = cut.lastIndexOf(' ');
+          meta = `${(sp > 100 ? cut.slice(0, sp) : cut).trimEnd()}…`;
+        }
 
         const newArticle = {
           title: articleData.title || item.title,
           slug: finalSlug,
           content: rewrittenHtml,
-          meta_description: (articleData.meta_description || '').substring(0, 160),
+          meta_description: meta,
           status: 'published',
           published_at: new Date().toISOString(),
           image_url: imageUrl,
@@ -518,7 +592,6 @@ export default async function handler(req, res) {
           log(`  ❌ Erro ao salvar no Supabase`);
         }
 
-        // Delay para respeitar rate limit Gemini (10 RPM free tier)
         if (articlesCreated < MAX_ARTICLES_PER_RUN) {
           await new Promise(r => setTimeout(r, DELAY_BETWEEN_ARTICLES_MS));
         }
