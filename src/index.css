@@ -72,6 +72,17 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Montserrat', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Prefer readable article text on mobile */
+  .prose {
+    overflow-wrap: anywhere;
   }
 
   /* ── Movie Card ── */

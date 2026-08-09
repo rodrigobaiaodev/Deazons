@@ -80,6 +80,7 @@ const BlogPost = () => {
         image={coverImage?.url}
         type="article"
         canonicalOverride={pageUrl}
+        publishedTime={post.publishedAt}
         jsonLd={jsonLd}
       />
       

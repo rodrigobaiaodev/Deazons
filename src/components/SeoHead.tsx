@@ -16,6 +16,8 @@ interface SeoHeadProps {
   canonicalOverride?: string;
   /** If true, sets robots meta to noindex/nofollow */
   noIndex?: boolean;
+  /** ISO date for article:published_time (Discover / news) */
+  publishedTime?: string | null;
 }
 
 /** Truncate at word boundary — never mid-word */
@@ -41,6 +43,7 @@ const SeoHead = ({
   jsonLd,
   canonicalOverride,
   noIndex = false,
+  publishedTime,
 }: SeoHeadProps) => {
   const canonicalUrl = useCanonicalUrl();
   // Prefer override; always strip query/hash from pathname-based canonical
@@ -76,6 +79,8 @@ const SeoHead = ({
       <meta property="og:image:height" content="630" />
       <meta property="og:site_name" content="Deazons" />
       <meta property="og:locale" content="pt_BR" />
+      {publishedTime && <meta property="article:published_time" content={publishedTime} />}
+      {publishedTime && <meta property="article:modified_time" content={publishedTime} />}
 
       {/* ── Twitter Card ── */}
       <meta name="twitter:card" content="summary_large_image" />

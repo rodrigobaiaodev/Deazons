@@ -115,6 +115,7 @@ const NewsArticlePage = () => {
         image={article.image_url}
         type="article"
         canonicalOverride={`https://deazons.com/noticias/${article.slug}`}
+        publishedTime={article.published_at || article.created_at}
         jsonLd={[
           {
             "@context": "https://schema.org",

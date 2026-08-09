@@ -22,45 +22,52 @@ const About = () => {
           
           <h2 className="text-2xl font-semibold mt-8 mb-4">Nossa Missão</h2>
           <p>
-            Nosso objetivo é criar uma experiência agradável para os apaixonados por cinema e televisão, 
-            oferecendo um banco de dados extenso com informações detalhadas sobre produções audiovisuais 
-            de todo o mundo.
+            Nosso objetivo é ajudar o público brasileiro a descobrir filmes e séries com fichas claras,
+            elenco, trailers, onde assistir e artigos editoriais sobre cultura pop — em uma experiência
+            rápida no celular e no computador.
           </p>
           
-          <h2 className="text-2xl font-semibold mt-8 mb-4">Nosso Banco de Dados</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">Conteúdo do site</h2>
           <p>
-            O Deazons utiliza a API do The Movie Database (TMDB) para fornecer informações 
-            precisas e atualizadas sobre produções, séries de TV e personalidades. Isso nos permite oferecer:
+            O Deazons combina:
           </p>
-          
           <ul className="list-disc pl-6 my-4 space-y-2">
-            <li>Mais de 500.000 filmes catalogados</li>
-            <li>Informações sobre mais de 100.000 séries de TV</li>
-            <li>Perfis detalhados de atores, diretores e outros profissionais</li>
-            <li>Dados sobre lançamentos, avaliações e muito mais</li>
+            <li>Páginas de filmes, séries e pessoas com dados da API do The Movie Database (TMDB);</li>
+            <li>Notícias de entretenimento reescritas pela nossa equipe editorial;</li>
+            <li>Artigos do blog com guias, listas e análises próprias.</li>
           </ul>
+          <p>
+            Créditos de metadados e imagens promocionais de catálogo: TMDB. Textos editoriais de notícias
+            e blog são produzidos/reescritos pelo Deazons.
+          </p>
           
           <h2 className="text-2xl font-semibold mt-8 mb-4">Tecnologias Utilizadas</h2>
           <p>
-            O Deazons é desenvolvido utilizando as melhores tecnologias modernas para garantir 
-            a melhor experiência do usuário:
+            O site é construído com React, TypeScript e Tailwind CSS, hospedado com HTTPS, e otimizado
+            para leitura em dispositivos móveis e desktop.
           </p>
           
-          <ul className="list-disc pl-6 my-4 space-y-2">
-            <li>React.js para uma interface dinâmica e responsiva</li>
-            <li>Tailwind CSS para estilos eficientes</li>
-            <li>TypeScript para um código mais robusto e manutenível</li>
-            <li>API TMDB para os dados de filmes e séries</li>
-          </ul>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">Contato</h2>
+          <p>
+            Dúvidas ou solicitações:{" "}
+            <a href="mailto:contato@deazons.com" className="text-primary hover:underline">
+              contato@deazons.com
+            </a>{" "}
+            ou a{" "}
+            <Link to="/contato" className="text-primary hover:underline">
+              página de contato
+            </Link>
+            .
+          </p>
           
           <h2 className="text-2xl font-semibold mt-8 mb-4">Créditos e Agradecimentos</h2>
           <p>
-            Este projeto não seria possível sem O The Movie Database (TMDB), que disponibiliza 
-            acesso à sua rica API. O Deazons não é oficialmente afiliado ao TMDB.
+            Este projeto utiliza a API do The Movie Database (TMDB). O Deazons não é afiliado nem
+            endossado pelo TMDB.
           </p>
           
-          <div className="my-8 flex items-center gap-4">
-            <Button asChild>
+          <div className="my-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <Button asChild className="min-h-[44px]">
               <a 
                 href="https://www.themoviedb.org/" 
                 target="_blank" 
@@ -72,27 +79,13 @@ const About = () => {
               </a>
             </Button>
             
-            <Button variant="outline" asChild>
-              <a 
-                href="https://developer.themoviedb.org/docs" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2"
-              >
-                Documentação da API
-                <ExternalLink size={16} />
-              </a>
+            <Button variant="outline" asChild className="min-h-[44px]">
+              <Link to="/contato">Fale conosco</Link>
             </Button>
           </div>
           
-          <h2 className="text-2xl font-semibold mt-8 mb-4">Contato e Suporte</h2>
-          <p>
-            Para maiores informações sobre o projeto ou reportar problemas, 
-            por favor entre em contato conosco pelos canais oficiais ou pelo formulário do site.
-          </p>
-          
           <div className="mt-8">
-            <Button asChild>
+            <Button asChild variant="secondary" className="min-h-[44px]">
               <Link to="/">Voltar para a Página Inicial</Link>
             </Button>
           </div>

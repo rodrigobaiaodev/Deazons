@@ -83,8 +83,8 @@ const PrivacyPolicy = () => {
               Nos termos da Lei Geral de Proteção de Dados (LGPD), você pode solicitar acesso, correção, 
               anonimização, portabilidade ou exclusão de dados pessoais relacionados ao uso do Deazons, 
               bem como informações sobre o tratamento. Para exercer estes direitos, envie um e-mail para{' '}
-              <a href="mailto:contato@deazons.com.br" className="text-deazon-400 hover:text-deazon-300">
-                contato@deazons.com.br
+              <a href="mailto:contato@deazons.com" className="text-deazon-400 hover:text-deazon-300">
+                contato@deazons.com
               </a>{' '}
               ou use a{' '}
               <Link to="/contato" className="text-deazon-400 hover:text-deazon-300">

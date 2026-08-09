@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import Logo from "./Logo";
@@ -23,67 +22,71 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const isScrolled = window.scrollY > 10;
-      if (isScrolled !== scrolled) {
-        setScrolled(isScrolled);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [scrolled]);
+  }, []);
 
   useEffect(() => {
     setMobileMenuOpen(false);
-  }, [location]);
+  }, [location.pathname]);
+
+  const openMenu = useCallback(() => setMobileMenuOpen(true), []);
+  const closeMenu = useCallback(() => setMobileMenuOpen(false), []);
 
   return (
-    <header
-      className={cn(
-        "fixed top-0 w-full z-50 transition-all duration-500 glass-navbar",
-        mobileMenuOpen && "bg-background/98"
-      )}
-    >
-      <div className="container flex items-center justify-between h-16">
-        <div className="flex items-center gap-8">
-          <Logo />
-          
-          <nav className="hidden md:flex items-center space-x-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={cn(
-                  "text-sm font-semibold tracking-wide transition-colors hover:text-primary",
-                  location.pathname === link.path
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+    <>
+      <header
+        className={cn(
+          "fixed top-0 w-full z-50 transition-all duration-500 glass-navbar",
+          scrolled && "shadow-lg"
+        )}
+      >
+        <div className="container flex items-center justify-between h-16 px-4 sm:px-6">
+          <div className="flex items-center gap-8 min-w-0">
+            <Logo />
+
+            <nav className="hidden md:flex items-center space-x-6" aria-label="Principal">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={cn(
+                    "text-sm font-semibold tracking-wide transition-colors hover:text-primary whitespace-nowrap",
+                    location.pathname === link.path ||
+                      (link.path !== "/" && location.pathname.startsWith(link.path))
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <SearchButton />
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-11 w-11"
+              onClick={openMenu}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-nav"
+              aria-label="Abrir menu"
+            >
+              <Menu size={22} />
+            </Button>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <SearchButton />
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(true)}
-          >
-            <Menu size={20} />
-            <span className="sr-only">Menu</span>
-          </Button>
-        </div>
-      </div>
-      
-      <MobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
-    </header>
+      </header>
+
+      <MobileMenu open={mobileMenuOpen} onClose={closeMenu} />
+    </>
   );
 };
 
