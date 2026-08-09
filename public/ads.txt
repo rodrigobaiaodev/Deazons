@@ -6,7 +6,6 @@ google.com, pub-9597097359230576, RESELLER, f08c47fec0942fa0
 
 
 mgid.com, 870178, DIRECT, d4c29acad76ce94f
-joinads.llc, b096350d-ae8a-4ff5-a46f-168455d19eab, DIRECT
 google.com, pub-6604116930729583, RESELLER, f08c47fec0942fa0
 google.com, pub-2441454515104767, RESELLER, f08c47fec0942fa0
 google.com, pub-2930805104418204, RESELLER, f08c47fec0942fa0

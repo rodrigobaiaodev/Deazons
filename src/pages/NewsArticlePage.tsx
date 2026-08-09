@@ -107,11 +107,6 @@ const NewsArticlePage = () => {
     );
   }
 
-  // Find content split point for middle ad
-  const contentParts = article.content.split('<h2>');
-  const hasMultipleH2 = contentParts.length > 2;
-  const middleIndex = Math.floor(contentParts.length / 2);
-
   return (
     <article className="min-h-screen pt-24 pb-20 bg-background text-foreground">
       <SeoHead
@@ -233,9 +228,6 @@ const NewsArticlePage = () => {
             </nav>
           </div>
         )}
-
-        {/* Anúncio após capa + TOC (não imediatamente sob o título) */}
-        <div className="my-8" dangerouslySetInnerHTML={{ __html: '<div joinadscode="Content1" refresh="true" lazyload="true"></div>' }} />
 
         {/* Conteúdo parafraseado */}
         <div 

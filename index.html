@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Deploy ID — updated on each build to bust CDN edge cache -->
-    <meta name="deploy-id" content="1786305000000" />
+    <meta name="deploy-id" content="1786305600000" />
 
     <!--
       CRITICAL SEO: Do NOT put a homepage canonical here.
@@ -47,55 +47,6 @@
 
     <!-- Web Push Notifications -->
     <script charset="UTF-8" src="https://cdn.sendwebpush.com/sendwebpush/client_services/67ffc45ad8867.js" async></script>
-
-    <!-- JoinAds Script -->
-    <link rel="preload" href="https://script.joinads.me/myad27406.js" crossorigin="anonymous" as="script">
-    <script type="module" src="https://script.joinads.me/myad27406.js" crossorigin="anonymous" async></script>
-
-    <!-- Google Publisher Tag (GPT) para Interstitial e Anchor -->
-    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
-    <script>
-      window.googletag = window.googletag || {cmd: []};
-      googletag.cmd.push(function() {
-          var targeting = {
-              'id_post_wp': [window.location.pathname.split('/').pop() || 'home']
-          };
-
-          if (window.location.search) {
-              var urlParams = new URLSearchParams(window.location.search);
-              ['utm_source','utm_medium','utm_campaign','utm_term','utm_content'].forEach(function(k){
-                  var v = urlParams.get(k);
-                  if (v) targeting[k] = [v];
-              });
-          }
-
-          googletag.setConfig({
-              targeting: targeting,
-              lazyLoad: { fetchMarginPercent: 20, renderMarginPercent: 10, mobileScaling: 2.0 },
-              collapseDiv: 'ON_NO_FILL'
-          });
-      });
-
-      googletag.cmd.push(function() {
-          var slot = googletag.defineOutOfPageSlot('/23342075951/deazons.com/Deazons_WEB_Interstitial', googletag.enums.OutOfPageFormat.INTERSTITIAL);
-          if (slot) {
-              slot.setConfig({ targeting: { price: '5.00' } });
-              slot.addService(googletag.pubads());
-          }
-          googletag.enableServices();
-          googletag.display(slot);
-      });
-
-      googletag.cmd.push(function() {
-          var anchorSlot = googletag.defineOutOfPageSlot('/23342075951/deazons.com/Deazons_WEB_Anchor', googletag.enums.OutOfPageFormat.TOP_ANCHOR);
-          if (anchorSlot) {
-              anchorSlot.setConfig({ targeting: { price: '3.00' } });
-              anchorSlot.addService(googletag.pubads());
-          }
-          googletag.enableServices();
-          googletag.display(anchorSlot);
-      });
-    </script>
 
     <!-- Schema.org JSON-LD – Website (sitewide; page-specific schemas come from SeoHead/prerender) -->
     <script type="application/ld+json">
